@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  bpafactoryintegrationandsimulation:
+    image: bpafactoryintegrationandsimulation
+    build:
+      context: .
+      dockerfile: ./Dockerfile
