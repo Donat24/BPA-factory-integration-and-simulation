@@ -1,10 +1,11 @@
 # BPA-factory-integration-and-simulation
 
 ## Quick Start
-Auf dem System muss Docker sowie Docker-Compose installiert sein.
+Auf dem System muss Docker, docker-compose und git installiert sein.
 
-1. `docker-compose build`
-2. `docker-compose up (-d for detached)`
+1. Clone the repository: `git clone https://github.com/Donat24/BPA-factory-integration-and-simulation.git`
+2. `docker-compose build`
+3. `docker-compose up (-d for detached)`
 ## Zielstellung
 Zielstellung des Projektes ist die visuelle Darstellung der Overall Equipment Effectiveness (OEE) von Maschinen durch Anwendung von Services in AWS. Dafür wurde der Kurs in drei Gruppen unterteilt, wobei jede Gruppe eine einzelne Zielstellung bearbeitet. Die einzelnen Themen sind:
 1. Factory Integration & Simulation
