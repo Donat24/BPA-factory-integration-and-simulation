@@ -4,7 +4,9 @@ import simpy
 import arrow
 import logging
 import pandas as pd
-import random
+import numpy as np
+import json
+import mqtt_publish as pub
 
 #SETUP
 TIME_FACTOR = 1.0 / 60 #Verhältniss von echten Sekudnen zur Simulation
@@ -18,18 +20,29 @@ delivery    = pd.read_excel("schedule.xlsx",sheet_name="Lieferung",converters={"
 status      = pd.read_excel("schedule.xlsx",sheet_name="Status",   converters={"Uhrzeit":str}).set_index("Uhrzeit")
 maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"Uhrzeit":str}).set_index("Uhrzeit")
 
+
+#--------------------------------------------------#
+# Funktionen für Mqtt Publishing
+#--------------------------------------------------#
+
+def publish_event_message(machine, status, msg):
+    message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
+    messageJson = json.dumps(message)
+    pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
+
+
 #--------------------------------------------------#
 # Funktionen für Dauer
 #--------------------------------------------------#
 
 def timespan_bottle_to_queue():
-    return .1
+    return np.random.normal(.1, .002)
 
 def timespan_fill_bottle():
-    return 1.3
+    return np.random.normal(1.3, .002)
 
 def timespan_bad_bottle():
-    return .4
+    return np.random.normal(.4, .002)
 
 def timespan_error_trigger():
     return 60
@@ -41,11 +54,13 @@ def timespan_error_repair():
 # Funktionen für Chancen
 #--------------------------------------------------#
 
+# bad bottle wird aussortiert
 def chance_bad_bottle():
-    return random.uniform(0,1) <= .1
+    return np.random.uniform(0,1) <= .007
 
+# Maschinenfehler, muss händisch gefixed werden
 def chance_bottle_issue():
-    return random.uniform(0,1) <= .001
+    return np.random.uniform(0,1) <= .0005
 
 #--------------------------------------------------#
 # iot gedöns
@@ -55,20 +70,23 @@ def iot_status(status):
 
 def iot_bottle_filled():
     #logging.info("BOTTLE FILLED")
-    pass
+    publish_event_message(1,1,5)
 
 def iot_bad_bottle():
     #logging.info("BAD FILLED")
-    pass
+    publish_event_message(1,2,2)
 
 def iot_beginn_maintenance():
-    logging.info("BEGINN MAINTENANCE")
+    #logging.info("BEGINN MAINTENANCE")
+    publish_event_message(1,1,3)
 
 def iot_error():
-    logging.info("IOT ERROR")
+    #logging.info("IOT ERROR")
+    publish_event_message(1,3,1)
 
 def iot_error_repair():
     logging.info("REPAIRED")
+    publish_event_message(1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -161,9 +179,9 @@ def schedule(env):
         #Lieferung
         if time in delivery.index:
             if not pd.isnull(delivery.loc[time][weekday]):
-                amaount = int(delivery.loc[time][weekday])
-                logging.info(f"{amaount} Flaschen geliefert")
-                env.process(proc_add_to_queue(env,amaount,que))
+                amount = int(delivery.loc[time][weekday])
+                logging.info(f"{amount} Flaschen geliefert")
+                env.process(proc_add_to_queue(env,amount,que))
         
         #Status
         if time in status.index:
@@ -185,3 +203,5 @@ def schedule(env):
 env = simpy.rt.RealtimeEnvironment(factor=TIME_FACTOR,strict=False)
 env.process(schedule(env)) 
 env.run()
+
+pub.myAWSIoTMQTTClient.disconnect()
