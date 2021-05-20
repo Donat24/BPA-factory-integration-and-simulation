@@ -129,3 +129,7 @@ dmypy.json
 .pyre/
 
 .vscode/
+
+# local directories
+
+certsAndKeys/
