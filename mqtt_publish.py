@@ -54,7 +54,7 @@ myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificateP
 
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 128, 80)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-myAWSIoTMQTTClient.configureDrainingFrequency(20)  # Draining: 2 Hz
+myAWSIoTMQTTClient.configureDrainingFrequency(100)  # Draining: 2 Hz
 myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
 myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
