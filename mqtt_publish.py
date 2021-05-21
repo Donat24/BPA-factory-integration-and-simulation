@@ -5,6 +5,8 @@ import logging
 import time
 import json
 import os
+import glob
+from pathlib import Path
 
 
 
@@ -20,13 +22,12 @@ def customCallback(client, userdata, message):
 
 # Set parameters
 
-dirname = os.path.dirname(__file__)
-dirCert = os.path.join(dirname, "certsAndKeys")
+dirname = "certsAndKeys"
 
-host = "a3ejkeh07lcisa-ats.iot.us-east-1.amazonaws.com"
-rootCAPath = os.path.join(dirCert, "root-CA.crt")
-certificatePath = os.path.join(dirCert, "bottling_plant.cert.pem")
-privateKeyPath = os.path.join(dirCert, "bottling_plant.private.key")
+host = "a3ejkeh07lcisa-ats.iot.us-east-1.amazonaws.com" # Is always he same for our purpose
+rootCAPath = next(Path(__file__).parent.joinpath(dirname).glob("*.crt"))
+certificatePath = next(Path(__file__).parent.joinpath(dirname).glob("*.cert.pem"))
+privateKeyPath = next(Path(__file__).parent.joinpath(dirname).glob("*.private.key"))
 port = 8883 #443
 clientId = "machine_1"
 topic = "test"
@@ -54,7 +55,7 @@ myAWSIoTMQTTClient.configureCredentials(rootCAPath, privateKeyPath, certificateP
 
 myAWSIoTMQTTClient.configureAutoReconnectBackoffTime(1, 128, 80)
 myAWSIoTMQTTClient.configureOfflinePublishQueueing(-1)  # Infinite offline Publish queueing
-myAWSIoTMQTTClient.configureDrainingFrequency(100)  # Draining: 2 Hz
+myAWSIoTMQTTClient.configureDrainingFrequency(100)  # Draining: Hz
 myAWSIoTMQTTClient.configureConnectDisconnectTimeout(10)  # 10 sec
 myAWSIoTMQTTClient.configureMQTTOperationTimeout(5)  # 5 sec
 
