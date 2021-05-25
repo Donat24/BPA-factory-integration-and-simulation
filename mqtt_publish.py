@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 import logging
@@ -22,7 +23,7 @@ def customCallback(client, userdata, message):
 
 # Set parameters
 
-dirname = "certsAndKeys"
+dirname = "aws-certs"
 
 host = "a3ejkeh07lcisa-ats.iot.us-east-1.amazonaws.com" # Is always he same for our purpose
 rootCAPath = next(Path(__file__).parent.joinpath(dirname).glob("*.crt"))
