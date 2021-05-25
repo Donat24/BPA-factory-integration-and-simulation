@@ -26,15 +26,18 @@ Um eine sinnvolle OEE zu berechnen hat die Maschine eine Plabelegungszeit und Pl
 
 **Datenmodell:**
 
-String mit Zahlen xxx-xxx
-
-| Maschine | Status | Nachricht |
-|----------|--------|-----------|
-| 001-      | 1      | 01        |
+```json
+{
+   "timestamp": "2021-05-03T07:00:00",
+   "machine": "001",
+   "message_type": "1",
+   "message": "01"
+}
+```
 
 Maschine: aufsteigend beginnend bei 001
 
-Status: [1,2,3]
+Status/message_type: [1,2,3]
 
 Nachricht: [0-9][1-9]
   - 1: Info
