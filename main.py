@@ -30,11 +30,10 @@ def publish_event_message(day, machine, status, msg):
     message = {
         "timestamp": str(day),
         "machine": str(machine).zfill(3),
-        "message_type":  str(status),
+        "message_type": str(status),
         "message" : str(msg).zfill(2)
     }
-    messageJson = json.dumps(message)
-    pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
+    pub.myAWSIoTMQTTClient.publish("topic_1", json.dumps(message), 1)
 
 
 #--------------------------------------------------#
@@ -91,8 +90,8 @@ def iot_error(day):
     publish_event_message(day,1,3,1)
 
 def iot_error_repair(day):
-    logging.info("REPAIRED")
-    publish_event_message(day1,1,4)
+    #logging.info("REPAIRED")
+    publish_event_message(day,1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -133,7 +132,7 @@ def proc_fill_bottle(env,res,que,day):
                 if chance_bottle_issue():
                     __error__ = True
         else:
-            yield env.process(proc_error_repair(env))
+            yield env.process(proc_error_repair(env, day))
 
 
 #Wartungsarbeiten
@@ -164,7 +163,7 @@ def schedule(env):
     global __running__
     #global __error__
 
-    #Res symbolisiert die fre zur Verfügung stehende Abfüll-Anlage
+    #Res symbolisiert die frei zur Verfügung stehende Abfüll-Anlage
     res = simpy.PriorityResource(env, capacity=1)
 
     #Que steht für die Anzahl an Flaschen die gerade befüllt werden können
