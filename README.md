@@ -33,7 +33,9 @@ String mit Zahlen xxx-xxx
 | 001-      | 1      | 01        |
 
 Maschine: aufsteigend beginnend bei 001
+
 Status: [1,2,3]
+
 Nachricht: [0-9][1-9]
   - 1: Info
     - 01: Maschine gestartet
