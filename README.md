@@ -22,7 +22,7 @@ Konkret soll Gruppe 1 Field Devices simulieren und die Nachrichten dieser zur we
 ### Field Device
 Die simulierte Maschine ist eine Getränkeabfüllanlage. Diese wird mithilfe eines Python Skripts simuliert. Die Containerisierung ermöglicht die einfache Verwendung der Simulation auf neuen Servern und soll gleichzeitig dafür sorgen, das mehrere Simulationen auf einem oder auf verschiedenen Servern erzeugt werden können.
 
-Um eine sinnvolle OEE zu berechnen hat die Maschine eine Plabelegungszeit und Planmenge hinterlegt. Die Flasche sendet Informationen über die Abfüllung neuer Flaschen, der Aussortierung von Flaschen und dem Stop der Maschine. Aufgrund zufälliger Ereignisse kommt es gelegentlich zu Ausfällen oder zur Aussortierung von Flaschen, was für eine geringere Planmenge sorgt.
+Um eine sinnvolle OEE zu berechnen hat die Maschine eine Planbelegungszeit und Planmenge hinterlegt. Die Maschine sendet Informationen über die Abfüllung neuer Flaschen, der Aussortierung von Flaschen und dem Stop der Maschine. Aufgrund zufälliger Ereignisse kommt es gelegentlich zu Ausfällen oder zur Aussortierung von Flaschen, was für eine geringere Planmenge sorgt.
 
 **Datenmodell:**
 
@@ -55,7 +55,7 @@ Nachricht: [0-9][1-9]
 
 ### IoT Core
 
-In AWS IoT Core wird hierzu ein neues Thing angelegt und die erforderlichen Zertifikate beschafft. Es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem eigentlichen Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client für die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
+Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client für die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
 
 
 ### IoT Rules Engine
