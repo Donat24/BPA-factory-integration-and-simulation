@@ -28,6 +28,9 @@ Um eine sinnvolle OEE zu berechnen hat die Maschine eine Plabelegungszeit und Pl
 
 ### IoT Core
 
+In AWS IoT Core wird hierzu ein neues Thing angelegt und die erforderlichen Zertifikate beschafft. Es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem eigentlichen Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client für die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
+
+
 ### IoT Rules Engine
 
 ### DynamoDB
