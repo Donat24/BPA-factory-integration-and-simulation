@@ -26,8 +26,13 @@ maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"
 # Funktionen für Mqtt Publishing
 #--------------------------------------------------#
 
-def publish_event_message(machine, status, msg):
-    message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
+def publish_event_message(day, machine, status, msg):
+    message = {
+        "timestamp": str(day),
+        "machine": str(machine).zfill(3),
+        "message_type":  str(status),
+        "message" : str(msg).zfill(2)
+    }
     messageJson = json.dumps(message)
     pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
 
@@ -69,25 +74,25 @@ def chance_bottle_issue():
 def iot_status(status):
     logging.info(f"Status {status}")
 
-def iot_bottle_filled():
+def iot_bottle_filled(day):
     #logging.info("BOTTLE FILLED")
-    publish_event_message(1,1,5)
+    publish_event_message(day,1,1,5)
 
-def iot_bad_bottle():
+def iot_bad_bottle(day):
     #logging.info("BAD FILLED")
-    publish_event_message(1,2,2)
+    publish_event_message(day,1,2,2)
 
-def iot_beginn_maintenance():
+def iot_beginn_maintenance(day):
     #logging.info("BEGINN MAINTENANCE")
-    publish_event_message(1,1,3)
+    publish_event_message(day,1,1,3)
 
-def iot_error():
+def iot_error(day):
     #logging.info("IOT ERROR")
-    publish_event_message(1,3,1)
+    publish_event_message(day,1,3,1)
 
-def iot_error_repair():
+def iot_error_repair(day):
     logging.info("REPAIRED")
-    publish_event_message(1,1,4)
+    publish_event_message(day1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -102,7 +107,7 @@ def proc_add_to_queue(env,number_of_bottles,que):
 #Befüllt Flassche / Fertigt diese Ab
 __running__ = False
 __error__ = False
-def proc_fill_bottle(env,res,que):
+def proc_fill_bottle(env,res,que,day):
     global __running__
     global __error__
 
@@ -116,13 +121,13 @@ def proc_fill_bottle(env,res,que):
 
                 #Schlechte Flasche
                 if chance_bad_bottle():
-                    iot_bad_bottle()
+                    iot_bad_bottle(day)
                     yield env.timeout(timespan_bad_bottle())
                     continue
                 
                 #Flasche Abfertigen
                 yield env.timeout(timespan_fill_bottle())
-                iot_bottle_filled()
+                iot_bottle_filled(day)
 
                 #Flasche macht Probleme
                 if chance_bottle_issue():
@@ -132,10 +137,10 @@ def proc_fill_bottle(env,res,que):
 
 
 #Wartungsarbeiten
-def proc_maintenance(env,minutes,res):
+def proc_maintenance(env,minutes,res,day):
     with res.request(priority = 1) as req:
         yield req
-        iot_beginn_maintenance()
+        iot_beginn_maintenance(day)
         yield env.timeout(minutes * 60)
 
 #Es liegt ein Fehler vor
@@ -146,11 +151,11 @@ def proc_error(env,proc):
         __error__ = True
 
 #Beheben des Fehlers
-def proc_error_repair(env,):
+def proc_error_repair(env,day):
     global __error__
-    iot_error()
+    iot_error(day)
     yield env.timeout(timespan_error_trigger())
-    iot_error_repair()
+    iot_error_repair(day)
     __error__ = False
 
 #Scheduling
@@ -188,14 +193,14 @@ def schedule(env):
         if time in status.index:
             if not pd.isnull(status.loc[time][weekday]):
                 __running__ = True if status.loc[time][weekday] == "r" else False
-                env.process(proc_fill_bottle(env,res,que))
+                env.process(proc_fill_bottle(env,res,que,day))
                 
         
         #Wartung
         if time in maintenance.index:
             if not pd.isnull(maintenance.loc[time][weekday]):
                 time = int(maintenance.loc[time][weekday])
-                env.process(proc_maintenance(env,time,res))
+                env.process(proc_maintenance(env,time,res,day))
         
         yield env.timeout(60)
         day = startday.shift(seconds=env.now)
