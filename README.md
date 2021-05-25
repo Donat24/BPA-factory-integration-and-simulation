@@ -26,6 +26,28 @@ Um eine sinnvolle OEE zu berechnen hat die Maschine eine Plabelegungszeit und Pl
 
 **Datenmodell:**
 
+String mit Zahlen xxx-xxx
+
+| Maschine | Status | Nachricht |
+|----------|--------|-----------|
+| 001-      | 1      | 01        |
+
+Maschine: aufsteigend beginnend bei 001
+Status: [1,2,3]
+Nachricht: [0-9][1-9]
+  - 1: Info
+    - 01: Maschine gestartet
+    - 02: Maschine gestoppt
+    - 03: Wartung gestartet
+    - 04: Wartung beendet
+    - 05: Flasche abgefüllt
+  - 2: Warnung
+    - 01: Keine Flaschen vorhanden
+    - 02: Flasche aussortiert
+  - 3: Fehler
+    - 01: Unerwartete Störung
+    - ...
+
 ### IoT Core
 
 In AWS IoT Core wird hierzu ein neues Thing angelegt und die erforderlichen Zertifikate beschafft. Es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem eigentlichen Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client für die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
