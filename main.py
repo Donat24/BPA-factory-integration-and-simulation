@@ -94,7 +94,7 @@ def iot_bottle_filled():
     #logging.info("BOTTLE FILLED")
     publish_event_message(1,1,5)
 
-def iot_bad_bottle():
+def iot_bottle_rejected():
     #logging.info("BAD FILLED")
     publish_event_message(1,2,2)
 
@@ -102,12 +102,12 @@ def iot_beginn_maintenance():
     #logging.info("BEGINN MAINTENANCE")
     publish_event_message(1,1,3)
 
-def iot_error():
+def iot_issue():
     #logging.info("IOT ERROR")
     publish_event_message(1,3,1)
 
-def iot_error_repair():
-    logging.info("REPAIRED")
+def iot_repair_issue():
+    #logging.info("REPAIRED")
     publish_event_message(1,1,4)
 
 #--------------------------------------------------#
@@ -153,6 +153,7 @@ def proc_check_bottles(env,que_check,que_fill,que_rejected):
         if chance_bottle_rejected():
             yield env.timeout(timespan_remove_rejected_bottle())
             yield que_rejected.put(1)
+            iot_bottle_rejected()
         else:
             yield env.timeout(timespan_move_bottle_to_fill())
             yield que_fill.put(1)
@@ -179,6 +180,10 @@ def proc_fill_bottles(env,res,que_fill,que_done):
                 
                 finally:
                     yield env.timeout(timespan_move_bottle_away())
+                    
+                    for i in range(FILLING_SATIONS):
+                        iot_bottle_filled()
+                    
                     yield que_done.put(FILLING_SATIONS)
         
         except simpy.Interrupt:
@@ -188,7 +193,7 @@ def proc_fill_bottles(env,res,que_fill,que_done):
 def proc_maintenance(env,minutes,res):
     with res.request(priority = 1) as req:
         yield req
-        #iot_beginn_maintenance()
+        iot_beginn_maintenance()
         yield env.timeout(timespan_maintenance(minutes * 60))
         return
 
@@ -215,10 +220,12 @@ def proc_repair_issue(env):
     update_time(env)
     logging.debug(f"{day_time} - Es liegt ein Fehler vor")
     __error__ = True
+    iot_issue()
     yield env.timeout(timespan_repair_issue())
     update_time(env)
     logging.debug(f"{day_time} - Fehler behoben")
     __error__ = False
+    iot_repair_issue()
     return
 
 #Scheduling
@@ -248,6 +255,7 @@ def schedule(env):
         if time in status.index:
             if not pd.isnull(status.loc[time][weekday]):
                 __running__ = True if status.loc[time][weekday] == "r" else False
+                iot_status(__running__)
                 env.process(proc_generate_bottles(env,que_check))
                 env.process(proc_check_bottles(env,que_check,que_fill,que_rejected))
                 proc = env.process(proc_fill_bottles(env,res,que_fill,que_done))
