@@ -3,3 +3,4 @@ simpy
 arrow
 pandas
 openpyxl
+AWSIoTPythonSDK
