@@ -9,7 +9,7 @@ import logging
 import pandas as pd
 import numpy as np
 import json
-#import mqtt_publish as pub
+import mqtt_publish as pub
 
 #CONFIG
 FILLING_SATIONS = 6
@@ -33,10 +33,10 @@ maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"
 # Funktionen für Mqtt Publishing
 #--------------------------------------------------#
 
-#def publish_event_message(machine, status, msg):
-#    message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
-#    messageJson = json.dumps(message)
-#    pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
+def publish_event_message(machine, status, msg):
+    message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
+    messageJson = json.dumps(message)
+    pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
 
 #--------------------------------------------------#
 # Funktionen für Dauer
@@ -87,28 +87,28 @@ def chance_bottle_issue():
 #--------------------------------------------------#
 # iot gedöns
 #--------------------------------------------------#
-#def iot_status(status):
-#    logging.info(f"Status {status}")
-#
-#def iot_bottle_filled():
-#    #logging.info("BOTTLE FILLED")
-#    publish_event_message(1,1,5)
-#
-#def iot_bad_bottle():
-#    #logging.info("BAD FILLED")
-#    publish_event_message(1,2,2)
-#
-#def iot_beginn_maintenance():
-#    #logging.info("BEGINN MAINTENANCE")
-#    publish_event_message(1,1,3)
-#
-#def iot_error():
-#    #logging.info("IOT ERROR")
-#    publish_event_message(1,3,1)
-#
-#def iot_error_repair():
-#    logging.info("REPAIRED")
-#    publish_event_message(1,1,4)
+def iot_status(status):
+    logging.info(f"Status {status}")
+
+def iot_bottle_filled():
+    #logging.info("BOTTLE FILLED")
+    publish_event_message(1,1,5)
+
+def iot_bad_bottle():
+    #logging.info("BAD FILLED")
+    publish_event_message(1,2,2)
+
+def iot_beginn_maintenance():
+    #logging.info("BEGINN MAINTENANCE")
+    publish_event_message(1,1,3)
+
+def iot_error():
+    #logging.info("IOT ERROR")
+    publish_event_message(1,3,1)
+
+def iot_error_repair():
+    logging.info("REPAIRED")
+    publish_event_message(1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -268,4 +268,4 @@ env = simpy.rt.RealtimeEnvironment(factor=TIME_FACTOR,strict=False)
 env.process(schedule(env)) 
 env.run()
 
-#pub.myAWSIoTMQTTClient.disconnect()
+pub.myAWSIoTMQTTClient.disconnect()
