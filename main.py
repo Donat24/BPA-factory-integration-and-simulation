@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import EX_OSFILE, remove
+import os
 from arrow.api import get
 import simpy
 import arrow
@@ -28,6 +29,8 @@ logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 status      = pd.read_excel("schedule.xlsx",sheet_name="Status",   converters={"Uhrzeit":str}).set_index("Uhrzeit")
 maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"Uhrzeit":str}).set_index("Uhrzeit")
 
+#topic
+IOT_TOPIC = os.environ.get("IOT_TOPIC", default="topic_1")
 
 #--------------------------------------------------#
 # Funktionen für Mqtt Publishing
@@ -36,7 +39,7 @@ maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"
 def publish_event_message(machine, status, msg):
     message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
     messageJson = json.dumps(message)
-    pub.myAWSIoTMQTTClient.publish("topic_1", messageJson, 1)
+    pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
 #--------------------------------------------------#
 # Funktionen für Dauer
