@@ -6,5 +6,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    env_file:
+      - .env
     volumes:
       - ../aws-certs:/app/aws-certs # aws-certs should lay one directory above

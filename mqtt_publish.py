@@ -25,7 +25,8 @@ def customCallback(client, userdata, message):
 
 dirname = "aws-certs"
 
-host = "a3ejkeh07lcisa-ats.iot.us-east-1.amazonaws.com" # Is always he same for our purpose
+#host = "a3ejkeh07lcisa-ats.iot.us-east-1.amazonaws.com" # Is always he same for our purpose
+host = os.environ.get("AWS_HOST")
 rootCAPath = next(Path(__file__).parent.joinpath(dirname).glob("*.crt"))
 certificatePath = next(Path(__file__).parent.joinpath(dirname).glob("*.cert.pem"))
 privateKeyPath = next(Path(__file__).parent.joinpath(dirname).glob("*.private.key"))
