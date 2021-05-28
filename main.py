@@ -39,8 +39,9 @@ IOT_TOPIC = os.environ.get("IOT_TOPIC", default="topic_1")
 def publish_event_message(machine, status, msg):
     global day_time
     utime = day_time.format("X")
-    message = int("".join([str(int(float(utime))), str(machine).zfill(3), 
-        str(status), str(msg).zfill(2)]))
+    message = "".join([hex(machine), hex(status), hex(msg), hex(int(float(utime)))])
+    #message = hex(int("".join([str(int(float(utime))), str(machine).zfill(3), 
+    #    str(status), str(msg).zfill(2)])))     
     messageJson = json.dumps(message)
     pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
