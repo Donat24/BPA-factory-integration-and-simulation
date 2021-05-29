@@ -37,7 +37,11 @@ IOT_TOPIC = os.environ.get("IOT_TOPIC", default="topic_1")
 #--------------------------------------------------#
 
 def publish_event_message(machine, status, msg):
-    message = "".join([str(machine).zfill(3), "-", str(status), str(msg).zfill(2)])
+    global day_time
+    utime = day_time.format("X")
+    message = "".join([hex(machine), hex(status), hex(msg), hex(int(float(utime)))])
+    #message = hex(int("".join([str(int(float(utime))), str(machine).zfill(3), 
+    #    str(status), str(msg).zfill(2)])))     
     messageJson = json.dumps(message)
     pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
@@ -93,24 +97,29 @@ def chance_bottle_issue():
 def iot_status(status):
     logging.info(f"Status {status}")
 
-def iot_bottle_filled():
+def iot_bottle_filled(env):
     #logging.info("BOTTLE FILLED")
+    update_time(env)
     publish_event_message(1,1,5)
 
-def iot_bottle_rejected():
+def iot_bottle_rejected(env):
     #logging.info("BAD FILLED")
+    update_time(env)
     publish_event_message(1,2,2)
 
-def iot_beginn_maintenance():
+def iot_beginn_maintenance(env):
     #logging.info("BEGINN MAINTENANCE")
+    update_time(env)
     publish_event_message(1,1,3)
 
-def iot_issue():
+def iot_issue(env):
     #logging.info("IOT ERROR")
+    update_time(env)
     publish_event_message(1,3,1)
 
-def iot_repair_issue():
+def iot_repair_issue(env):
     #logging.info("REPAIRED")
+    update_time(env)
     publish_event_message(1,1,4)
 
 #--------------------------------------------------#
@@ -156,7 +165,7 @@ def proc_check_bottles(env,que_check,que_fill,que_rejected):
         if chance_bottle_rejected():
             yield env.timeout(timespan_remove_rejected_bottle())
             yield que_rejected.put(1)
-            iot_bottle_rejected()
+            iot_bottle_rejected(env)
         else:
             yield env.timeout(timespan_move_bottle_to_fill())
             yield que_fill.put(1)
@@ -185,7 +194,7 @@ def proc_fill_bottles(env,res,que_fill,que_done):
                     yield env.timeout(timespan_move_bottle_away())
                     
                     for i in range(FILLING_SATIONS):
-                        iot_bottle_filled()
+                        iot_bottle_filled(env)
                     
                     yield que_done.put(FILLING_SATIONS)
         
@@ -196,7 +205,7 @@ def proc_fill_bottles(env,res,que_fill,que_done):
 def proc_maintenance(env,minutes,res):
     with res.request(priority = 1) as req:
         yield req
-        iot_beginn_maintenance()
+        iot_beginn_maintenance(env)
         yield env.timeout(timespan_maintenance(minutes * 60))
         return
 
@@ -223,12 +232,12 @@ def proc_repair_issue(env):
     update_time(env)
     logging.debug(f"{day_time} - Es liegt ein Fehler vor")
     __error__ = True
-    iot_issue()
+    iot_issue(env)
     yield env.timeout(timespan_repair_issue())
     update_time(env)
     logging.debug(f"{day_time} - Fehler behoben")
     __error__ = False
-    iot_repair_issue()
+    iot_repair_issue(env)
     return
 
 #Scheduling
