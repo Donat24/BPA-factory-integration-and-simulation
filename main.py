@@ -40,9 +40,20 @@ def publish_event_message(machine, status, msg):
     global day_time
     utime = day_time.format("X")
     message = "".join([hex(machine), hex(status), hex(msg), hex(int(float(utime)))])
-    #message = hex(int("".join([str(int(float(utime))), str(machine).zfill(3), 
-    #    str(status), str(msg).zfill(2)])))     
-    messageJson = json.dumps(message)
+    
+    timestamp = int(float(utime))
+    arrtime_array = timestamp.to_bytes(4, 'big')
+    uint8 = bytearray(7)
+    uint8[0] = machine
+    uint8[1] = status
+    uint8[2] = msg
+    uint8[3] = arrtime_array[0];
+    uint8[4] = arrtime_array[1];
+    uint8[5] = arrtime_array[2];
+    uint8[6] = arrtime_array[3];
+
+    hexadecimal_string = uint8.hex()
+    messageJson = json.dumps(hexadecimal_string)  
     pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
 #--------------------------------------------------#
