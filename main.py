@@ -173,33 +173,32 @@ def proc_check_bottles(env,que_check,que_fill,que_rejected):
 #Befüllt Flaschen
 def proc_fill_bottles(env,res,que_fill,que_done):
     global __running__
+    global __error__
 
     while __running__:
-        try:
-            with res.request(priority = 2) as req:
-                yield req
-                yield que_fill.get(FILLING_SATIONS)
-                
-                try:
-                    yield env.timeout(timespan_fill_bottles())
-                    
-                    if chance_bottle_issue():
-                        raise simpy.Interrupt(None)
 
-                except simpy.Interrupt:
-                    yield env.process(proc_repair_issue(env))
+        with res.request(priority = 2) as req:
+            
+            yield req
+            yield que_fill.get(FILLING_SATIONS)
 
-                
-                finally:
-                    yield env.timeout(timespan_move_bottle_away())
-                    
-                    for i in range(FILLING_SATIONS):
-                        iot_bottle_filled(env)
-                    
-                    yield que_done.put(FILLING_SATIONS)
-        
-        except simpy.Interrupt:
-            yield env.process(proc_repair_issue(env))
+            #Falls beim Warten auf die Flaschen ein Fehler auftritt
+            if __error__:
+                yield env.process(proc_repair_issue(env))
+
+            yield env.timeout(timespan_fill_bottles())
+            
+            #Falls beim Abfüllen ein Fehler auftritt
+            if chance_bottle_issue():
+                __error__ = True
+                yield env.process(proc_repair_issue(env))
+            
+            yield env.timeout(timespan_move_bottle_away())
+            
+            for i in range(FILLING_SATIONS):
+                iot_bottle_filled(env)
+            
+            yield que_done.put(FILLING_SATIONS)
 
 #Wartungsarbeiten
 def proc_maintenance(env,minutes,res):
@@ -218,22 +217,23 @@ def proc_issue(env,proc):
         yield env.timeout(timespan_issue_trigger())
         
         if __running__:
-            if not __error__:
-                try:
-                    proc.interrupt()
-                except:
-                    pass
+            __error__ = True
 
 #Behebt Fehlers
 def proc_repair_issue(env):
     global __error__
     global day_time
 
+    #Vor der Reperatur
     update_time(env)
     logging.debug(f"{day_time} - Es liegt ein Fehler vor")
     __error__ = True
     iot_issue(env)
+    
+    #Reperatur
     yield env.timeout(timespan_repair_issue())
+    
+    #Danach
     update_time(env)
     logging.debug(f"{day_time} - Fehler behoben")
     __error__ = False
