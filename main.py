@@ -19,8 +19,8 @@ GENERATE_BOTTLES = 90
 TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
-TIME_FACTOR = 1.0 / 60 #Verhältniss von echten Sekudnen zur Simulation
-START_DATE_TIME = "2021-05-03T07:29:00" #Anfgangsdatum der Simulation ... Ist wichtig für Scheduling
+TIME_FACTOR = 1.0 / 1 #Verhältnis von echten Sekunden zur Simulationszeit
+START_DATE_TIME = "2021-05-03T07:29:00" #Anfangsdatum der Simulation für Scheduling
 
 #Logging
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
@@ -40,9 +40,20 @@ def publish_event_message(machine, status, msg):
     global day_time
     utime = day_time.format("X")
     message = "".join([hex(machine), hex(status), hex(msg), hex(int(float(utime)))])
-    #message = hex(int("".join([str(int(float(utime))), str(machine).zfill(3), 
-    #    str(status), str(msg).zfill(2)])))     
-    messageJson = json.dumps(message)
+    
+    timestamp = int(float(utime))
+    arrtime_array = timestamp.to_bytes(4, 'big')
+    uint8 = bytearray(7)
+    uint8[0] = machine
+    uint8[1] = status
+    uint8[2] = msg
+    uint8[3] = arrtime_array[0];
+    uint8[4] = arrtime_array[1];
+    uint8[5] = arrtime_array[2];
+    uint8[6] = arrtime_array[3];
+
+    hexadecimal_string = uint8.hex()
+    messageJson = json.dumps(hexadecimal_string)  
     pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
 #--------------------------------------------------#
@@ -92,7 +103,7 @@ def chance_bottle_issue():
     return np.random.uniform(0,1) <= .0005
 
 #--------------------------------------------------#
-# iot gedöns
+# iot stuff
 #--------------------------------------------------#
 def iot_status(status):
     logging.info(f"Status {status}")
@@ -173,33 +184,32 @@ def proc_check_bottles(env,que_check,que_fill,que_rejected):
 #Befüllt Flaschen
 def proc_fill_bottles(env,res,que_fill,que_done):
     global __running__
+    global __error__
 
     while __running__:
-        try:
-            with res.request(priority = 2) as req:
-                yield req
-                yield que_fill.get(FILLING_SATIONS)
-                
-                try:
-                    yield env.timeout(timespan_fill_bottles())
-                    
-                    if chance_bottle_issue():
-                        raise simpy.Interrupt(None)
 
-                except simpy.Interrupt:
-                    yield env.process(proc_repair_issue(env))
+        with res.request(priority = 2) as req:
+            
+            yield req
+            yield que_fill.get(FILLING_SATIONS)
 
-                
-                finally:
-                    yield env.timeout(timespan_move_bottle_away())
-                    
-                    for i in range(FILLING_SATIONS):
-                        iot_bottle_filled(env)
-                    
-                    yield que_done.put(FILLING_SATIONS)
-        
-        except simpy.Interrupt:
-            yield env.process(proc_repair_issue(env))
+            #Falls beim Warten auf die Flaschen ein Fehler auftritt
+            if __error__:
+                yield env.process(proc_repair_issue(env))
+
+            yield env.timeout(timespan_fill_bottles())
+            
+            #Falls beim Abfüllen ein Fehler auftritt
+            if chance_bottle_issue():
+                __error__ = True
+                yield env.process(proc_repair_issue(env))
+            
+            yield env.timeout(timespan_move_bottle_away())
+            
+            for i in range(FILLING_SATIONS):
+                iot_bottle_filled(env)
+            
+            yield que_done.put(FILLING_SATIONS)
 
 #Wartungsarbeiten
 def proc_maintenance(env,minutes,res):
@@ -209,7 +219,7 @@ def proc_maintenance(env,minutes,res):
         yield env.timeout(timespan_maintenance(minutes * 60))
         return
 
-#Erezugt Probleme nach gewissen Zeitabständen
+#Erzeugt Probleme nach zufälligen Zeitabständen
 def proc_issue(env,proc):
     global __running__
     global __error__
@@ -218,22 +228,23 @@ def proc_issue(env,proc):
         yield env.timeout(timespan_issue_trigger())
         
         if __running__:
-            if not __error__:
-                try:
-                    proc.interrupt()
-                except:
-                    pass
+            __error__ = True
 
-#Behebt Fehlers
+#Behebt Fehler
 def proc_repair_issue(env):
     global __error__
     global day_time
 
+    #Vor der Reperatur
     update_time(env)
     logging.debug(f"{day_time} - Es liegt ein Fehler vor")
     __error__ = True
     iot_issue(env)
+    
+    #Reperatur
     yield env.timeout(timespan_repair_issue())
+    
+    #Danach
     update_time(env)
     logging.debug(f"{day_time} - Fehler behoben")
     __error__ = False
