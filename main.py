@@ -19,8 +19,8 @@ GENERATE_BOTTLES = 90
 TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
-TIME_FACTOR = 1.0 / 60 #Verhältniss von echten Sekudnen zur Simulation
-START_DATE_TIME = "2021-05-03T07:29:00" #Anfgangsdatum der Simulation ... Ist wichtig für Scheduling
+TIME_FACTOR = 1.0 / 1 #Verhältnis von echten Sekunden zur Simulationszeit
+START_DATE_TIME = "2021-05-03T07:29:00" #Anfangsdatum der Simulation für Scheduling
 
 #Logging
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
@@ -103,7 +103,7 @@ def chance_bottle_issue():
     return np.random.uniform(0,1) <= .0005
 
 #--------------------------------------------------#
-# iot gedöns
+# iot stuff
 #--------------------------------------------------#
 def iot_status(status):
     logging.info(f"Status {status}")
@@ -219,7 +219,7 @@ def proc_maintenance(env,minutes,res):
         yield env.timeout(timespan_maintenance(minutes * 60))
         return
 
-#Erezugt Probleme nach gewissen Zeitabständen
+#Erzeugt Probleme nach zufälligen Zeitabständen
 def proc_issue(env,proc):
     global __running__
     global __error__
@@ -230,7 +230,7 @@ def proc_issue(env,proc):
         if __running__:
             __error__ = True
 
-#Behebt Fehlers
+#Behebt Fehler
 def proc_repair_issue(env):
     global __error__
     global day_time
