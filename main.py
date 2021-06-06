@@ -79,7 +79,7 @@ def timespan_fill_bottles():
     return max(np.random.normal(5, .002),0.1)
 
 def timespan_move_bottle_away():
-    return max(np.random.normal(1, .002),0.1)
+    return max(np.random.normal(.1, .002),0.1)
 
 def timespan_maintenance(mean):
     return max(np.random.normal(mean, 10),60)
@@ -101,6 +101,9 @@ def chance_bottle_rejected():
 # Maschinenfehler, muss händisch gefixed werden
 def chance_bottle_issue():
     return np.random.uniform(0,1) <= .0005
+
+def chance_bottle_remove():
+    return np.random.uniform(0,1) <= .5
 
 #--------------------------------------------------#
 # iot stuff
@@ -182,11 +185,13 @@ def proc_check_bottles(env,que_check,que_fill,que_rejected):
             yield que_fill.put(1)
 
 #Befüllt Flaschen
-def proc_fill_bottles(env,res,que_fill,que_done):
+def proc_fill_bottles(env,res,que_fill,que_done,que_removed):
     global __running__
     global __error__
 
     while __running__:
+
+        remove_bottles = 0
 
         with res.request(priority = 2) as req:
             
@@ -203,10 +208,15 @@ def proc_fill_bottles(env,res,que_fill,que_done):
             if chance_bottle_issue():
                 __error__ = True
                 yield env.process(proc_repair_issue(env))
+                
+                #GGF ist eine Flasche doch Kaputt und muss händisch entfernt werden
+                if chance_bottle_remove():
+                    remove_bottles = 1
+                    que_removed.put(remove_bottles)
             
-            yield env.timeout(timespan_move_bottle_away())
-            
-            for i in range(FILLING_SATIONS):
+            #abtransport der Flaschen   
+            for i in range(FILLING_SATIONS - remove_bottles):
+                yield env.timeout(timespan_move_bottle_away())
                 iot_bottle_filled(env)
             
             yield que_done.put(FILLING_SATIONS)
@@ -220,7 +230,7 @@ def proc_maintenance(env,minutes,res):
         return
 
 #Erzeugt Probleme nach zufälligen Zeitabständen
-def proc_issue(env,proc):
+def proc_issue(env):
     global __running__
     global __error__
 
@@ -266,6 +276,7 @@ def schedule(env):
     que_fill = simpy.Container(env,capacity=FILLING_SATIONS)
     que_done = simpy.Container(env)
     que_rejected = simpy.Container(env)
+    que_removed = simpy.Container(env)
 
     while True:
         
@@ -281,8 +292,8 @@ def schedule(env):
                 iot_status(__running__)
                 env.process(proc_generate_bottles(env,que_check))
                 env.process(proc_check_bottles(env,que_check,que_fill,que_rejected))
-                proc = env.process(proc_fill_bottles(env,res,que_fill,que_done))
-                env.process(proc_issue(env,proc))
+                env.process(proc_fill_bottles(env,res,que_fill,que_done,que_removed))
+                env.process(proc_issue(env))
                 
         
         #Wartung
