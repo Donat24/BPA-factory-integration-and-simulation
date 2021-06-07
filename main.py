@@ -79,7 +79,7 @@ def timespan_fill_bottles():
     return max(np.random.normal(5, .002),0.1)
 
 def timespan_move_bottle_away():
-    return max(np.random.normal(.1, .002),0.1)
+    return max(np.random.normal(.16, .002),0.1)
 
 def timespan_maintenance(mean):
     return max(np.random.normal(mean, 10),60)
