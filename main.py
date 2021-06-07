@@ -64,7 +64,7 @@ def timespan_generate_bottle():
     return max(np.random.normal(1,1),0.1)
 
 def timespan_move_bottle_to_check():
-    return max(np.random.normal(1, .002),0.1)
+    return max(np.random.normal(.2, .002),0.1)
 
 def timespan_check_bottle():
     return max(np.random.normal(.5, .002),0.1)
@@ -73,7 +73,7 @@ def timespan_remove_rejected_bottle():
     return max(np.random.normal(.25, .002),0.1)
 
 def timespan_move_bottle_to_fill():
-    return max(np.random.normal(1, .002),0.1)
+    return max(np.random.normal(.2, .002),0.1)
 
 def timespan_fill_bottles():
     return max(np.random.normal(5, .002),0.1)
