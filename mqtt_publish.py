@@ -23,9 +23,9 @@ certificatePath = next(Path(__file__).parent.joinpath(dirname).glob("*certificat
 privateKeyPath = next(Path(__file__).parent.joinpath(dirname).glob("*private.pem.key"))
 port = 8883 #443
 clientId = os.environ.get("IOT_CLIENT_ID", default="machine_1")
-print("#####################"+clientId)
 
 
+"""
 # Configure logging
 
 logger = logging.getLogger("AWSIoTPythonSDK.core")
@@ -34,7 +34,7 @@ streamHandler = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 streamHandler.setFormatter(formatter)
 logger.addHandler(streamHandler)
-
+"""
 
 # Init AWSIoTMQTTClient
 
