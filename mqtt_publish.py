@@ -11,15 +11,6 @@ from pathlib import Path
 
 
 
-# Custom MQTT message callback
-
-def customCallback(client, userdata, message):
-    print("Received a new message: ")
-    print(message.payload)
-    print("from topic: ")
-    print(message.topic)
-    print("--------------\n\n")
-
 
 # Set parameters
 
@@ -31,9 +22,8 @@ rootCAPath = dirname + "/AmazonRootCA1.pem"
 certificatePath = next(Path(__file__).parent.joinpath(dirname).glob("*certificate.pem.crt"))
 privateKeyPath = next(Path(__file__).parent.joinpath(dirname).glob("*private.pem.key"))
 port = 8883 #443
-clientId = "machine_1"
-topic = "test"
-mode = "publish"
+clientId = os.environ.get("IOT_CLIENT_ID", default="machine_1")
+print("#####################"+clientId)
 
 
 # Configure logging

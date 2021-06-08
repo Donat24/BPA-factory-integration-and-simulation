@@ -39,8 +39,6 @@ IOT_TOPIC = os.environ.get("IOT_TOPIC", default="topic_1")
 def publish_event_message(machine, status, msg):
     global day_time
     utime = day_time.format("X")
-    message = "".join([hex(machine), hex(status), hex(msg), hex(int(float(utime)))])
-    
     timestamp = int(float(utime))
     arrtime_array = timestamp.to_bytes(4, 'big')
     uint8 = bytearray(7)
