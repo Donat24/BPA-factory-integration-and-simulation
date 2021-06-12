@@ -10,6 +10,7 @@ import logging
 import pandas as pd
 import numpy as np
 import json
+import distutils
 import mqtt_publish as pub
 
 #CONFIG
@@ -19,8 +20,9 @@ GENERATE_BOTTLES = 90
 TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
-TIME_FACTOR = 1.0 / 1 #Verhältnis von echten Sekunden zur Simulationszeit
-START_DATE_TIME = "2021-05-03T07:29:00" #Anfangsdatum der Simulation für Scheduling
+DEBUG           =  distutils.util.strtobool(os.environ.get("DEBUG", default="FALSE"))
+TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="1")) #Verhältnis von echten Sekunden zur Simulationszeit
+START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T07:29:00") #Anfangsdatum der Simulation für Scheduling
 
 #Logging
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
@@ -57,6 +59,14 @@ def publish_event_message(machine, status, msg):
 #--------------------------------------------------#
 # Funktionen für Dauer
 #--------------------------------------------------#
+
+#sorgt dafür das die gescheduelten Events etwas unregelmäßig passierens
+VARIANCE_MEAN = 5
+def timespan_variance():
+    return min(max(np.random.normal(VARIANCE_MEAN,1),0.1),10)
+
+def timespan_till_maintenance():
+    return min(max(np.random.normal(VARIANCE_MEAN,2),VARIANCE_MEAN),10)
 
 def timespan_generate_bottle():
     return max(np.random.normal(1,1),0.1)
@@ -142,7 +152,7 @@ __running__ = False
 __error__ = False
 
 # TIME
-start_day_time = arrow.get(START_DATE_TIME)
+start_day_time = arrow.get(START_DATE_TIME) if DEBUG else arrow.now()
 day_time = start_day_time
 
 # aktuallisiert Zeit
@@ -151,6 +161,28 @@ def update_time(env):
     global day_time
 
     day_time = start_day_time.shift(seconds=env.now)
+
+#Startet alle Prozesse zum Arbeitsbeginn
+def proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed):
+    global __running__
+
+    yield env.timeout(timespan_variance())
+
+    __running__ = True
+    iot_status(__running__)
+    env.process(proc_generate_bottles(env,que_check))
+    env.process(proc_check_bottles(env,que_check,que_fill,que_rejected))
+    env.process(proc_fill_bottles(env,res,que_fill,que_done,que_removed))
+    env.process(proc_issue(env))
+
+#beendet alle Prozesse wenn der Arbeitstag vorbei ist
+def proc_end_processes(env):
+    global __running__
+
+    yield env.timeout(timespan_variance())
+
+    __running__ = False
+    iot_status(__running__)
 
 #generiert Flaschen
 def proc_generate_bottles(env,que_check):
@@ -221,6 +253,9 @@ def proc_fill_bottles(env,res,que_fill,que_done,que_removed):
 
 #Wartungsarbeiten
 def proc_maintenance(env,minutes,res):
+
+    yield env.timeout(timespan_till_maintenance())
+
     with res.request(priority = 1) as req:
         yield req
         iot_beginn_maintenance(env)
@@ -281,18 +316,15 @@ def schedule(env):
         logging.debug(f"Datum:{day_time}|Queue_Check:{que_check.level}|Queue_Fill:{que_fill.level}|Queue_Done:{que_done.level}|Queue_Rej:{que_rejected.level}")
 
         weekday = day_time.isoweekday()
-        time = day_time.format("HH:mm:ss")
+        time = day_time.shift(minute=VARIANCE_MEAN).format("HH:mm:ss")
         
         #Status
         if time in status.index:
             if not pd.isnull(status.loc[time][weekday]):
-                __running__ = True if status.loc[time][weekday] == "r" else False
-                iot_status(__running__)
-                env.process(proc_generate_bottles(env,que_check))
-                env.process(proc_check_bottles(env,que_check,que_fill,que_rejected))
-                env.process(proc_fill_bottles(env,res,que_fill,que_done,que_removed))
-                env.process(proc_issue(env))
-                
+                if status.loc[time][weekday] == "r":
+                    env.process(proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed))
+                else:
+                    env.process(proc_end_processes(env))
         
         #Wartung
         if time in maintenance.index:
