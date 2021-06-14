@@ -4,6 +4,7 @@
 from os import EX_OSFILE, remove
 import os
 from arrow.api import get
+from pandas.tseries import offsets
 import simpy
 import arrow
 import logging
@@ -11,6 +12,7 @@ import pandas as pd
 import numpy as np
 import json
 import mqtt_publish as pub
+import datetime
 
 #CONFIG
 FILLING_SATIONS = 6
@@ -27,11 +29,111 @@ START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T07:29:00
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
 
 #pandas
-status      = pd.read_excel("schedule.xlsx",sheet_name="Status",   converters={"Uhrzeit":str}).set_index("Uhrzeit")
-maintenance = pd.read_excel("schedule.xlsx",sheet_name="Wartung",  converters={"Uhrzeit":str}).set_index("Uhrzeit")
+status_excel      = pd.read_excel("schedule.xlsx",sheet_name="Status")
+maintenance_excel = pd.read_excel("schedule.xlsx",sheet_name="Wartung")
 
 #topic
 IOT_TOPIC = os.environ.get("IOT_TOPIC", default="topic_1")
+
+#--------------------------------------------------#
+# Verarbeiten der eingelesenen Excel-Datein
+#--------------------------------------------------#
+
+#für Status Sheet
+def compute_status_excel(df):
+
+    res = pd.DataFrame(columns=["Tag","Start","Stop"])
+
+    #Inhalt der Spalten
+    time_col = df["Uhrzeit"]
+    day_cols = [1,2,3,4,5,6,7]
+
+    #Sucht Intervalle, in dennen die Maschine eingeschalten ist
+    for day in day_cols:
+        schedule = df.loc[:,day]
+        starts = time_col[schedule == "r"]
+        stops  = time_col[schedule == "s"]
+        for index, start in starts.iteritems():
+            next_stop = stops[stops > start].iloc[0]
+            res = res.append({
+                "Tag" : day,
+                "Start": start,
+                "Stop": next_stop
+            }, ignore_index=True)
+    
+    return res
+
+#dür Manintenance Sheet
+def compute_maintenance_excel(df):
+
+    res = pd.DataFrame(columns=["Tag","Start","Dauer"])
+
+    #Inhalt der Spalten
+    time_col = df["Uhrzeit"]
+    day_cols = [1,2,3,4,5,6,7]
+
+    #Sucht Intervalle, in dennen die Maschine eingeschalten ist
+    for day in day_cols:
+        schedule = df.loc[:,day]
+        starts = time_col[pd.notna(schedule)]
+        for index, start in starts.iteritems():
+            res = res.append({
+                "Tag" : day,
+                "Start": start,
+                "Dauer": schedule[index]
+            }, ignore_index=True)
+    
+    return res
+
+
+status = compute_status_excel(status_excel)
+maintenance = compute_maintenance_excel(maintenance_excel)
+
+del(status_excel)
+del(maintenance_excel)
+
+# Hilfsfunktion
+def to_time(minutes=0):
+    return (datetime.datetime(2000,1,1) + datetime.timedelta(minutes=minutes)).time()
+
+#--------------------------------------------------#
+# erhalte Status
+#--------------------------------------------------#
+
+# Schaut in der Schdule nach ob die maschine gerade laufen sollte
+def should_run():
+
+    global day_time
+
+    time = day_time.time()
+    day = day_time.isoweekday()
+    return ((status.Tag == day) & (status.Start_updated >= time) & (status.Stop_updated <= time)).any()
+
+#beendet oder statet Maschine nach Zeitplan
+def check_status(env,res,que_check,que_fill,que_done,que_rejected,que_removed):
+
+    global __running__
+
+    if should_run():
+        if not __running__:
+            env.process(proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed))
+    else:
+        if __running__:
+            env.process(proc_end_processes(env))
+
+#Startet Wartung nach Zeitplan
+def check_maintenance(env,res):
+
+    global day_time
+
+    time = day_time.time()
+    day = day_time.isoweekday()
+
+    maintenance_slice = ((maintenance.Tag == day) & (maintenance.Start_updated == time))
+    if maintenance_slice.any():
+        mins = maintenance[maintenance_slice]["Dauer"][0]
+        offset = maintenance[maintenance_slice]["Offset"][0]
+        env.process(proc_maintenance(env,mins,res,offset))
 
 #--------------------------------------------------#
 # Funktionen für Mqtt Publishing
@@ -59,14 +161,30 @@ def publish_event_message(machine, status, msg):
 # Funktionen für Dauer
 #--------------------------------------------------#
 
-#sorgt dafür das die gescheduelten Events etwas unregelmäßig passierens
-VARIANCE_MEAN = 5
-def timespan_variance():
-    return min(max(np.random.normal(VARIANCE_MEAN,1),0.1),10)
+#variabler Anfang
+def time_start_machine(time_in_minutes):
+    return np.random.normal(time_in_minutes, 7)
 
-def timespan_till_maintenance():
-    return min(max(np.random.normal(VARIANCE_MEAN,2),VARIANCE_MEAN),10)
+def time_stop_machine(time_in_minutes):
+    return np.random.normal(time_in_minutes, 3)
 
+def time_maintenance(time_in_minutes):
+    return np.random.normal(time_in_minutes, 3)
+
+def timespan_offset():
+    return np.random.uniform(0,60)
+
+def update_status_times():
+    status["Start_updated"] = status.Start.apply(lambda x: to_time(time_start_machine(x.hour * 60 + x.minute - 1)))
+    status["Start_updated"] = status.Start_updated.apply(lambda x: x.replace(second=0,microsecond=0))
+    status["Stop_updated"] = status.Stop.apply(lambda x: to_time(time_stop_machine(x.hour * 60 + x.minute - 1)))
+    status["Stop_updated"] = status.Stop_updated.apply(lambda x: x.replace(second=0,microsecond=0))
+
+def update_maintenance_times():
+    maintenance["Start_updated"] = maintenance.Start.apply(lambda x: to_time(time_start_machine(x.hour * 60 + x.minute)))
+    maintenance["Start_updated"] = maintenance.Start_updated.apply(lambda x: x.replace(second=0,microsecond=0))
+
+#variable Dauer
 def timespan_generate_bottle():
     return max(np.random.normal(1,1),0.1)
 
@@ -162,10 +280,20 @@ def update_time(env):
     day_time = start_day_time.shift(seconds=env.now)
 
 #Startet alle Prozesse zum Arbeitsbeginn
-def proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed):
+def proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed,offset = 0):
+    
     global __running__
 
-    yield env.timeout(timespan_variance())
+    
+    #Verzgert dn Anfang
+    if offset:
+        yield env.timeout(offset)
+    else: 
+        yield env.timeout(timespan_offset)
+
+    #verhindert das mehrfache startens
+    if __running__:
+        return
 
     __running__ = True
     iot_status(__running__)
@@ -175,10 +303,14 @@ def proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_re
     env.process(proc_issue(env))
 
 #beendet alle Prozesse wenn der Arbeitstag vorbei ist
-def proc_end_processes(env):
+def proc_end_processes(env,offset = 0):
     global __running__
 
-    yield env.timeout(timespan_variance())
+    #Verzgert das Ende
+    if offset:
+        yield env.timeout(offset)
+    else: 
+        yield env.timeout(timespan_offset)
 
     __running__ = False
     iot_status(__running__)
@@ -251,9 +383,13 @@ def proc_fill_bottles(env,res,que_fill,que_done,que_removed):
             yield que_done.put(FILLING_SATIONS)
 
 #Wartungsarbeiten
-def proc_maintenance(env,minutes,res):
+def proc_maintenance(env,minutes,res,offset = 0):
 
-    yield env.timeout(timespan_till_maintenance())
+    #Verzögert Wartung
+    if offset:
+        yield env.timeout(offset)
+    else: 
+        yield env.timeout(timespan_offset)
 
     with res.request(priority = 1) as req:
         yield req
@@ -310,26 +446,27 @@ def schedule(env):
     que_rejected = simpy.Container(env)
     que_removed = simpy.Container(env)
 
-    while True:
-        
-        logging.debug(f"Datum:{day_time}|Queue_Check:{que_check.level}|Queue_Fill:{que_fill.level}|Queue_Done:{que_done.level}|Queue_Rej:{que_rejected.level}")
+    #Varianz für die erste Woche
+    update_status_times()
+    update_maintenance_times()
 
-        weekday = day_time.isoweekday()
-        time = day_time.shift(minutes=VARIANCE_MEAN).format("HH:mm:ss")
-        
+    while True:
+
+        logging.debug(f"Datum:{day_time}|Queue_Check:{que_check.level}|Queue_Fill:{que_fill.level}|Queue_Done:{que_done.level}|Queue_Rej:{que_rejected.level}")
+       
+        time = day_time.time()
+        day = day_time.isoweekday()
+
+        #lässt das ein und ausschalten etwas variieren
+        if(day == 7 and time == datetime.time(23,59,00)):
+            update_status_times()
+            update_maintenance_times()
+
         #Status
-        if time in status.index:
-            if not pd.isnull(status.loc[time][weekday]):
-                if status.loc[time][weekday] == "r":
-                    env.process(proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_removed))
-                else:
-                    env.process(proc_end_processes(env))
+        check_status(env,res,que_check,que_fill,que_done,que_rejected,que_removed)
         
         #Wartung
-        if time in maintenance.index:
-            if not pd.isnull(maintenance.loc[time][weekday]):
-                time = int(maintenance.loc[time][weekday])
-                env.process(proc_maintenance(env,time,res))
+        check_maintenance(env,res)
         
         yield env.timeout(60)
         update_time(env)
