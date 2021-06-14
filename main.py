@@ -10,7 +10,6 @@ import logging
 import pandas as pd
 import numpy as np
 import json
-import distutils
 import mqtt_publish as pub
 
 #CONFIG
@@ -20,7 +19,7 @@ GENERATE_BOTTLES = 90
 TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
-DEBUG           =  distutils.util.strtobool(os.environ.get("DEBUG", default="FALSE"))
+DEBUG           = bool(int(os.environ.get("DEBUG", default="0")))
 TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="1")) #Verhältnis von echten Sekunden zur Simulationszeit
 START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T07:29:00") #Anfangsdatum der Simulation für Scheduling
 
@@ -316,7 +315,7 @@ def schedule(env):
         logging.debug(f"Datum:{day_time}|Queue_Check:{que_check.level}|Queue_Fill:{que_fill.level}|Queue_Done:{que_done.level}|Queue_Rej:{que_rejected.level}")
 
         weekday = day_time.isoweekday()
-        time = day_time.shift(minute=VARIANCE_MEAN).format("HH:mm:ss")
+        time = day_time.shift(minutes=VARIANCE_MEAN).format("HH:mm:ss")
         
         #Status
         if time in status.index:
