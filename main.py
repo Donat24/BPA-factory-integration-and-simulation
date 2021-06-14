@@ -132,8 +132,7 @@ def check_maintenance(env,res):
     maintenance_slice = ((maintenance.Tag == day) & (maintenance.Start_updated == time))
     if maintenance_slice.any():
         mins = maintenance[maintenance_slice]["Dauer"][0]
-        offset = maintenance[maintenance_slice]["Offset"][0]
-        env.process(proc_maintenance(env,mins,res,offset))
+        env.process(proc_maintenance(env,mins,res))
 
 #--------------------------------------------------#
 # Funktionen für Mqtt Publishing
