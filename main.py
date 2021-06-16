@@ -116,7 +116,14 @@ def chance_bottle_remove():
 # iot stuff
 #--------------------------------------------------#
 def iot_status(status):
+    update_time(env)
     logging.info(f"Status {status}")
+    if status:
+        publish_event_message(1,1,1)
+    else:
+        publish_event_message(1,1,2)
+
+    
 
 def iot_bottle_filled(env):
     #logging.info("BOTTLE FILLED")
@@ -311,7 +318,7 @@ def schedule(env):
     que_removed = simpy.Container(env)
 
     #Offset damit scheduling Funktioniert
-    offset = 60 - (day_time.seconds % 60)
+    offset = 60 - (day_time.second % 60)
     logging.debug(f"Wartet {offset} Sekunden bis mit den Scheduling begonnen wird")
     yield env.timeout(offset)
     update_time(env)
