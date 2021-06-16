@@ -53,7 +53,7 @@ def publish_event_message(machine, status, msg):
 
     hexadecimal_string = uint8.hex()
     messageJson = json.dumps(hexadecimal_string)  
-    #pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
+    pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
 #--------------------------------------------------#
 # Funktionen für Dauer
@@ -173,6 +173,10 @@ def proc_start_processes(env,res,que_check,que_fill,que_done,que_rejected,que_re
     global __running__
 
     yield env.timeout(timespan_variance())
+    
+    #verhindert mehfaches startetn
+    if __running__:
+        return
 
     __running__ = True
     iot_status(__running__)
