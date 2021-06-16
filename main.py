@@ -10,7 +10,7 @@ import logging
 import pandas as pd
 import numpy as np
 import json
-#import mqtt_publish as pub
+import mqtt_publish as pub
 
 #CONFIG
 FILLING_SATIONS = 6
@@ -20,7 +20,7 @@ TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
 DEBUG           = bool(int(os.environ.get("DEBUG", default="0")))
-TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="0.1")) #Verhältnis von echten Sekunden zur Simulationszeit
+TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="1")) #Verhältnis von echten Sekunden zur Simulationszeit
 START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T11:11:45.1345") #Anfangsdatum der Simulation für Scheduling
 
 #Logging
@@ -118,37 +118,37 @@ def chance_bottle_remove():
 def iot_status(status):
     update_time(env)
     logging.info(f"Status {status}")
-#    if status:
-#        publish_event_message(1,1,1)
-#    else:
-#        publish_event_message(1,1,2)
+    if status:
+        publish_event_message(1,1,1)
+    else:
+        publish_event_message(1,1,2)
 
     
 
 def iot_bottle_filled(env):
     #logging.info("BOTTLE FILLED")
     update_time(env)
-#    publish_event_message(1,1,5)
+    publish_event_message(1,1,5)
 
 def iot_bottle_rejected(env):
     #logging.info("BAD FILLED")
     update_time(env)
-#    publish_event_message(1,2,2)
+    publish_event_message(1,2,2)
 
 def iot_beginn_maintenance(env):
     logging.info("BEGINN MAINTENANCE")
     update_time(env)
-#    publish_event_message(1,1,3)
+    publish_event_message(1,1,3)
 
 def iot_issue(env):
     logging.info("IOT ERROR")
     update_time(env)
-#    publish_event_message(1,3,1)
+    publish_event_message(1,3,1)
 
 def iot_repair_issue(env):
     logging.info("REPAIRED")
     update_time(env)
-#    publish_event_message(1,1,4)
+    publish_event_message(1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -353,4 +353,4 @@ env = simpy.rt.RealtimeEnvironment(factor=TIME_FACTOR,strict=False)
 env.process(schedule(env)) 
 env.run()
 
-#pub.myAWSIoTMQTTClient.disconnect()
+pub.myAWSIoTMQTTClient.disconnect()
