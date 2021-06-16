@@ -10,7 +10,7 @@ import logging
 import pandas as pd
 import numpy as np
 import json
-import mqtt_publish as pub
+#import mqtt_publish as pub
 
 #CONFIG
 FILLING_SATIONS = 6
@@ -20,8 +20,8 @@ TIMESPAN_WAIT_BOTTLE = 10
 
 #SETUP
 DEBUG           = bool(int(os.environ.get("DEBUG", default="0")))
-TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="1")) #Verhältnis von echten Sekunden zur Simulationszeit
-START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T07:29:00") #Anfangsdatum der Simulation für Scheduling
+TIME_FACTOR     = float(os.environ.get("TIME_FACTOR", default="0.1")) #Verhältnis von echten Sekunden zur Simulationszeit
+START_DATE_TIME = os.environ.get("START_DATE_TIME", default="2021-05-03T11:11:45.1345") #Anfangsdatum der Simulation für Scheduling
 
 #Logging
 logging.basicConfig(format="%(message)s", level=logging.DEBUG)
@@ -53,7 +53,7 @@ def publish_event_message(machine, status, msg):
 
     hexadecimal_string = uint8.hex()
     messageJson = json.dumps(hexadecimal_string)  
-    pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
+    #pub.myAWSIoTMQTTClient.publish(IOT_TOPIC, messageJson, 1)
 
 #--------------------------------------------------#
 # Funktionen für Dauer
@@ -118,37 +118,37 @@ def chance_bottle_remove():
 def iot_status(status):
     update_time(env)
     logging.info(f"Status {status}")
-    if status:
-        publish_event_message(1,1,1)
-    else:
-        publish_event_message(1,1,2)
+#    if status:
+#        publish_event_message(1,1,1)
+#    else:
+#        publish_event_message(1,1,2)
 
     
 
 def iot_bottle_filled(env):
     #logging.info("BOTTLE FILLED")
     update_time(env)
-    publish_event_message(1,1,5)
+#    publish_event_message(1,1,5)
 
 def iot_bottle_rejected(env):
     #logging.info("BAD FILLED")
     update_time(env)
-    publish_event_message(1,2,2)
+#    publish_event_message(1,2,2)
 
 def iot_beginn_maintenance(env):
-    #logging.info("BEGINN MAINTENANCE")
+    logging.info("BEGINN MAINTENANCE")
     update_time(env)
-    publish_event_message(1,1,3)
+#    publish_event_message(1,1,3)
 
 def iot_issue(env):
-    #logging.info("IOT ERROR")
+    logging.info("IOT ERROR")
     update_time(env)
-    publish_event_message(1,3,1)
+#    publish_event_message(1,3,1)
 
 def iot_repair_issue(env):
-    #logging.info("REPAIRED")
+    logging.info("REPAIRED")
     update_time(env)
-    publish_event_message(1,1,4)
+#    publish_event_message(1,1,4)
 
 #--------------------------------------------------#
 # Simulation
@@ -318,7 +318,7 @@ def schedule(env):
     que_removed = simpy.Container(env)
 
     #Offset damit scheduling Funktioniert
-    offset = 60 - (day_time.second % 60)
+    offset = 60 - (day_time.second % 60) if day_time.second % 60 > 0 else 0
     logging.debug(f"Wartet {offset} Sekunden bis mit den Scheduling begonnen wird")
     yield env.timeout(offset)
     update_time(env)
@@ -353,4 +353,4 @@ env = simpy.rt.RealtimeEnvironment(factor=TIME_FACTOR,strict=False)
 env.process(schedule(env)) 
 env.run()
 
-pub.myAWSIoTMQTTClient.disconnect()
+#pub.myAWSIoTMQTTClient.disconnect()
