@@ -310,6 +310,13 @@ def schedule(env):
     que_rejected = simpy.Container(env)
     que_removed = simpy.Container(env)
 
+    #Offset damit scheduling Funktioniert
+    offset = 60 - (day_time.seconds % 60)
+    logging.debug(f"Wartet {offset} Sekunden bis mit den Scheduling begonnen wird")
+    yield env.timeout(offset)
+    update_time(env)
+
+
     while True:
         
         logging.debug(f"Datum:{day_time}|Queue_Check:{que_check.level}|Queue_Fill:{que_fill.level}|Queue_Done:{que_done.level}|Queue_Rej:{que_rejected.level}")
