@@ -62,10 +62,10 @@ def publish_event_message(machine, status, msg):
 #sorgt dafür das die gescheduelten Events etwas unregelmäßig passierens
 VARIANCE_MEAN = 5
 def timespan_variance():
-    return min(max(np.random.normal(VARIANCE_MEAN,1),0.1),10)
+    return min(max(np.random.normal(VARIANCE_MEAN * 60,1),0.1),10)
 
 def timespan_till_maintenance():
-    return min(max(np.random.normal(VARIANCE_MEAN,2),VARIANCE_MEAN),10)
+    return min(max(np.random.normal(VARIANCE_MEAN * 60,2),VARIANCE_MEAN),10)
 
 def timespan_generate_bottle():
     return max(np.random.normal(1,1),0.1)
