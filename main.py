@@ -133,12 +133,17 @@ def iot_bottle_filled(env):
 def iot_bottle_rejected(env):
     #logging.info("BAD FILLED")
     update_time(env)
-    publish_event_message(1,2,2)
+    publish_event_message(1,2,1)
 
 def iot_beginn_maintenance(env):
     logging.info("BEGINN MAINTENANCE")
     update_time(env)
     publish_event_message(1,1,3)
+
+def iot_end_maintenance(env):
+    logging.info("END MAINTENANCE")
+    update_time(env)
+    publish_event_message(1,1,4)
 
 def iot_issue(env):
     logging.info("IOT ERROR")
@@ -148,7 +153,7 @@ def iot_issue(env):
 def iot_repair_issue(env):
     logging.info("REPAIRED")
     update_time(env)
-    publish_event_message(1,1,4)
+    publish_event_message(1,1,6)
 
 #--------------------------------------------------#
 # Simulation
@@ -270,6 +275,7 @@ def proc_maintenance(env,minutes,res):
         yield req
         iot_beginn_maintenance(env)
         yield env.timeout(timespan_maintenance(minutes * 60))
+        iot_end_maintenance(env)
         return
 
 #Erzeugt Probleme nach zufälligen Zeitabständen
