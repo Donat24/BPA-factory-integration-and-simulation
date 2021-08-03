@@ -24,6 +24,8 @@ chmod -x start.sh
 apt install docker
 apt install docker-compose
 
+mkdir aws-certs
+
 # move certificate files to directory for docker volume binding
 mv root-CA.crt NAME.cert.pem NAME.private.key NAME.public.key aws-certificates/
 
