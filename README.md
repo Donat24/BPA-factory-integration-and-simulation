@@ -72,7 +72,22 @@ Nachricht: [0-9][1-9]
 
 
 **Erläuterung Umwandlung Payload**
-> TODO: 
+Bei den Payload handelt es sich um Nachrichtenpakete zwischen Sensor bzw. Maschine. Diese beinhalten keine Steuer- und Protokollinformationen, sondern nur die zu übertragenen Nutzdaten.
+
+Um den Umfang der zu übertragenen Datenmengen gering zu halten, werden diese kodieren, wodurch Energie eingespart werden. Beispielsweise kommt bei LoRaWAN hinzu, dass für die Übertragung des Payloads öffentliche Frequenzkanälen genutzt werden und die Datenmenge, welche pro Tag übertragen werden kann, gesetzlich begrenzt ist.
+
+Für den Aufbau des Payloades gibt es keine festen Vorgaben. Es ist üblich die Messwerte am Sensor zu erfassen und die gesammelte Informationen auf ein einheitliches Datenformat zu bringen und geschlossen zu übertragen. Diese Werte werden Byteweise in ein Array gespeichert und Protokollabhängig verschlüsselt übertragen.
+
+In einem Byte können acht Bit gespeichert werden, welche Null oder Eins sein können, weshalb
+sich daraus Zustände von 2^8 also 256, ergeben. Der Payload selber wird als hexadezimal
+übertragen, was somit Formate zwischen 00 und FF für 255 ermöglicht. Nach dem im Projekt festgelegten Datenschema können somit maximal 255 verschiedene Maschinen, Nachrichten-Typen oder Nachrichten-Codes übertragen werden.
+
+Bei der Abfüllanlage wird ebenfalls der Unix-Timestamp übertragen. Mit 4 Bytes lassen sich mit 256 hoch 4 (256⁴) etwas mehr als 4 Milliarden Zustände abbilden und somit auch der Timestamp mit weniger als 2 Mrd Werten. Durch Shifting, wird durch Arithmetik die Ausgangsvariable, in dem Fall der Integer-Wert des Timestamps, auf das einzelne Byte-Array verteilt und wie beschrieben noch in einen Hexadezimal-Wert umgewandelt.n 
+
+Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Decoder, 
+wieder in die ursprünglichen Teile zerlegt und anschließend, beispielsweise als JSON-Objekt, nachstehenden Systeme bereitgestellt.
+
+> TODO: @all, bitte nochmal gegenlesen ;-)
 
 ## Schnittstelle EC2 und IoT Core
 
