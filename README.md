@@ -100,6 +100,44 @@ Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thin
 ## IoT Rules Engine: Schnittstelle IoT Core und Lambda Function
 ## Lambda Function: Payload-Umwandlung
 
+Die Weiterverarbeitung der gesendete Daten findet mithilfe einer Lambda-Funktion statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt. 
+
+Der eingehende Payload muss als erstes von Hexadezimal wieder in ein Byte-Array umgewandelt werden. Dies passiert mithilfe der Funktion *Buffer.from()*. Anschließend wird der Decoder aufgerufen, welche das JSON mit den übergebenen Messwerten füllt. Das Logen des Aufrufs, sowie die Ausgabe des Objektes, findet durch die Funktion *console.log()* statt, welche im Produktivsystem auch entfernt werden sollte.
+
+Folgender Programmcode ist für die Funktion notwendig.
+
+```js
+exports.handler = async (event) => {
+    
+    const buf = Buffer.from(event, 'hex');
+    var response = DecodeMsg(buf);
+    
+    console.log("Response \n");
+    console.log(response);
+    
+    return response;
+};
+
+function DecodeMsg(bytes) {
+   var machine = bytes[0];
+   var message_type = bytes[1];
+   var message = bytes[2];
+   var timestamp = (bytes[3] << 24 | bytes[4] << 16 || bytes[5] << 8 | bytes[6] );
+    
+   var iot_bottle_msg = {
+      "machine": machine,
+      "message_type" : message_type,
+      "message" : message,
+      "timestamp" : timestamp,
+    };
+    
+    return {
+      iot_bottle_msg
+    }
+}
+
+```
+
 # 4. Praktikumsvorstellung und Präsentation
 ## Durchführung des Praktikums
 Ziel des Praktikums war es die Kommilitonen den gesamten Prozess der Projektgruppe selber entwickeln zu lassen, um die gemachten Erfahrungen und das entstandene Wissen weiterzugeben und voneinander zu lernen. Die Durchführung erfolgte durch Erstellung einzelner Videos mit gleichzeitigem Support bei aufgetretenen Problemen. Die Videos wurden nach den jeweiligen einzelnen Technologien getrennt. Der Ablauf des Praktikums ist in der nachfolgenden Abbildung dargestellt:
