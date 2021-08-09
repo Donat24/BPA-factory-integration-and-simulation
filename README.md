@@ -4,17 +4,18 @@
 
 # Quick Start
 ## Field Device
-**Voraussetzungen:** Docker, docker-compose und git
+**Voraussetzungen:** Docker, docker-compose, Port XXXX geöffnet und git
 
-1. Clone the repository: `git clone https://github.com/Donat24/BPA-factory-integration-and-simulation.git`
-2. Docker Compose vorbereiten: `docker-compose build`
-3. Docker Compose starten: `docker-compose up (-d for detached)`
+1. Das Repository klonen: `git clone https://github.com/Donat24/BPA-factory-integration-and-simulation.git`
+2. IoT-Topic in Datei für Umgebungsvariablen `.env` anpassen.
+3. Docker Compose Services vorbereiten: `docker-compose build`
+4. Docker Compose Services starten: `docker-compose up (-d for detached)`
 
 ## Verbindung AWS und IoT Core
-Siehe Praktikumsvideos..
+> TODO: Kurzanleitung (1-2 Sätze wie es funktioniert sollte reichen)
 
 ## Verwendung Lambda Function
-Siehe Praktikumsvideos..
+> TODO: Kurzanleitung (1-2 Sätze wie es funktioniert sollte reichen)
 
 # 1. Einführung
 ## Zielstellung
@@ -28,83 +29,87 @@ Konkret soll Gruppe 1 Field Devices simulieren und die Nachrichten dieser zur we
 Team 1 und Ersteller dieser Dokumentation sind [Tamás Janusko](https://github.com/TamasJ), [Jonas Kretzschmar](https://github.com/Donat24), [Patrick Pietsch](https://github.com/patudd) und [Max Schwerdtner](https://github.com/mschwrdtnr).
 
 # 2. Architekturkonzept und Schnittstellen
+## Grobüberblick Architektur
+> TODO: Änderung der Architekturskizze und richtige Verwendung der Begriffe "MQTT-Broker", "IoT-Rules", ...
+
+Hauptaufgabe der Gruppe ist es eine Maschine zu simulieren und dessen Daten innerhalb von AWS verarbeitbar zu machen. Für die Simulation der Maschine wird der Service "EC2" von AWS verwendet. Dieser stellt proportionierbare Serverkapazitäten bereit und bietet sich deshalb für die Ausführung von Programmen an. Alternativ wurde die Simulation einer Abfüllanlage mittels node-RED in Betracht gezogen. Um für möglichst wenig Aufwand bei der Ausführung der Simulation zu sorgen wird ein Docker-Container verwendet, der jeglichen nötigen Programmcode enthält. Durch die Containerisierung ist es theoretisch möglich mehrere Maschinen zu simulieren und mit AWS zu verbinden.
+
+Die Simulation auf der EC2 leitet mittels dem MQTT-Protokoll Nachrichten an IoT Core weiterleiten. Die Nachrichten bestehen dabei aus einem hexadezimal umgewandelten Payload, um im Realfall oder bei der Nutzung von LoRaWAN sparsam bei der Datenübertragung zu sein. Dieser Schritt dient zur Übung und Bekanntmachung mit LoRaWAN und ist nicht zwingend notwendig. Innerhalb des Services IoT Core ist eine IoT Rule definiert mit welcher alle eingehenden Nachrichten eines bestimmten Topics weitergeleitet werden können. Unter anderem lassen sich die Nachrichten an IoT-Analytics, eine DynamoDB oder AWS Kinesis weiterleiten, um die Nachrichten zu speichern oder weiter zu verarbeiten. Im vorliegenden Fall werden alle Nachrichten an eine Lambdafunktion weiterleitet. Die Lambda-Funktion erhält die Nachricht der Maschine über die definierte IoT Rule, wandelt diese in eine verständliche json-Nachricht um und leitet die umgewandelte Nachricht an eine Lambda-Funktion von Gruppe 2. 
+
+Der gesamte Architekturaufbau ist in der nachfolgenden Abbildung dargestellt.
+
 ![Architecture](drawings/BPA_Architecture.png)
-
-> TODO: Abbildung erläutern
-
-> TODO: Kurze Beschreibung der Architektur und Schnittstellen sowie Gründe für die Wahl dieser
-# 3. Beschreibung entwickelter Artefakte und verwendeter Cloud Services
 ## Field Device Funktionsweise
 Die simulierte Maschine ist eine Getränkeabfüllanlage. Diese wird mithilfe eines Python Skripts simuliert. Die Containerisierung ermöglicht die einfache Verwendung der Simulation auf neuen Servern und soll gleichzeitig dafür sorgen, das mehrere Simulationen auf einem oder auf verschiedenen Servern erzeugt werden können.
 
 Um eine sinnvolle OEE zu berechnen hat die Maschine eine Planbelegungszeit und Planmenge hinterlegt. Die Maschine sendet Informationen über die Abfüllung neuer Flaschen, der Aussortierung von Flaschen und dem Stop der Maschine. Aufgrund zufälliger Ereignisse kommt es gelegentlich zu Ausfällen oder zur Aussortierung von Flaschen, was für eine geringere Planmenge sorgt.
 
-**Datenmodell:**
+> TODO: Erläuterung Docker Container-Umgebungsvariablen
 
-> TODO: Ändern gemäß https://github.com/Donat24/BPA-factory-integration-and-simulation/issues/4#issuecomment-849742339
+### Datenmodell des Field Device 
+Während der Simulation enstehen verschiedene Ereignisse. Diese werden im json-Format mithilfe von MQTT gesendet. Der Aufbau einer Nachricht sei wie folgt definiert:
+
+| Attribut | Möglicher Wert | Erläuterung |
+|---|---|---|
+| timestamp | 32-bit-Integer Zahl | Aktuelle Uhrzeit als Unixzeit |
+| machine | int: 1-255 | Nummer der Maschine zur Unterscheidung verschiedener Maschinen |
+| message_type | int: 1 - 3 | Dient zur Unterscheidung der Nachrichten:<br>1: Information<br>2: Warnung<br>3: Fehler |
+| message | int: 1 - 255 | Der Nachrichtentyp ist ausschlagebend für die Nachricht:<br>**1-Information:**<br>- 1: Maschine gestartet<br>- 2: Maschine gestoppt<br>- 3: Wartung gestartet<br>- 4: Wartung beendet<br>- 5: Flasche abgefüllt<br>**2-Warnung:**<br>- 1: Keine Flaschen vorhanden<br>- 2: Flasche aussortiert<br>**3-Fehler:**<br>- 1: Unerwartete Störung |
+
+Auf Basis dieser Definition sieht eine Nachricht beispielsweise wie folgt aus:
 
 ```json
 {
-   "timestamp": "2021-05-03T07:00:00",
-   "machine": "001",
-   "message_type": "1",
-   "message": "01"
+   "timestamp": "1622054915732",
+   "machine": 1,
+   "message_type": 1,
+   "message": 1
 }
 ```
 
-Maschine: aufsteigend beginnend bei 001
+Diese Nachricht wird innerhalb der Simulation in einen Hexadezimal-Wert umgewandelt.
 
-Status/message_type: [1,2,3]
-
-Nachricht: [0-9][1-9]
-  - 1: Info
-    - 01: Maschine gestartet
-    - 02: Maschine gestoppt
-    - 03: Wartung gestartet
-    - 04: Wartung beendet
-    - 05: Flasche abgefüllt
-  - 2: Warnung
-    - 01: Keine Flaschen vorhanden
-    - 02: Flasche aussortiert
-  - 3: Fehler
-    - 01: Unerwartete Störung
-    - ...
-
-
-**Erläuterung Umwandlung Payload**
+### Erläuterung Umwandlung Payload
 
 Bei den Payload handelt es sich um Nachrichtenpakete zwischen Sensor bzw. Maschine. Diese beinhalten keine Steuer- und Protokollinformationen, sondern nur die zu übertragenen Nutzdaten.
 
-Um den Umfang der zu übertragenen Datenmengen gering zu halten, werden diese kodieren, wodurch Energie eingespart werden. Beispielsweise kommt bei LoRaWAN hinzu, dass für die Übertragung des Payloads öffentliche Frequenzkanälen genutzt werden und die Datenmenge, welche pro Tag übertragen werden kann, gesetzlich begrenzt ist.
+Um den Umfang der zu übertragenen Datenmengen gering zu halten, werden diese kodiert, wodurch Energie eingespart werden kann. Beispielsweise kommt bei LoRaWAN hinzu, dass für die Übertragung des Payloads öffentliche Frequenzkanälen genutzt werden und die Datenmenge, welche pro Tag übertragen werden kann, gesetzlich begrenzt ist.
 
 Für den Aufbau des Payloades gibt es keine festen Vorgaben. Es ist üblich die Messwerte am Sensor zu erfassen und die gesammelte Informationen auf ein einheitliches Datenformat zu bringen und geschlossen zu übertragen. Diese Werte werden Byteweise in ein Array gespeichert und Protokollabhängig verschlüsselt übertragen.
 
-In einem Byte können acht Bit gespeichert werden, welche Null oder Eins sein können, weshalb
-sich daraus Zustände von 2^8 also 256, ergeben. Der Payload selber wird als hexadezimal
-übertragen, was somit Formate zwischen 00 und FF für 255 ermöglicht. Nach dem im Projekt festgelegten Datenschema können somit maximal 255 verschiedene Maschinen, Nachrichten-Typen oder Nachrichten-Codes übertragen werden.
+In einem Byte können acht Bit gespeichert werden, welche Null oder Eins sein können, weshalb sich daraus Zustände von 2^8 also 256, ergeben. Der Payload selber wird als hexadezimal übertragen, was somit Formate zwischen 00 und FF für 255 ermöglicht. Nach dem im Projekt festgelegten Datenschema können somit maximal 255 verschiedene Maschinen, Nachrichten-Typen oder Nachrichten-Codes übertragen werden.
 
-Bei der Abfüllanlage wird ebenfalls der Unix-Timestamp übertragen. Mit 4 Bytes lassen sich mit 256 hoch 4 (256⁴) etwas mehr als 4 Milliarden Zustände abbilden und somit auch der Timestamp mit weniger als 2 Mrd Werten. Durch Shifting, wird durch Arithmetik die Ausgangsvariable, in dem Fall der Integer-Wert des Timestamps, auf das einzelne Byte-Array verteilt und wie beschrieben noch in einen Hexadezimal-Wert umgewandelt.n 
+Bei der Abfüllanlage wird ebenfalls der Unix-Timestamp übertragen. Mit 4 Bytes lassen sich mit 256 hoch 4 (256⁴) circa 4 Milliarden Zustände abbilden und somit auch der Timestamp mit weniger als 2 Mrd Werten. Durch Shifting, wird durch Arithmetik die Ausgangsvariable, in dem Fall der Integer-Wert des Timestamps, auf das einzelne Byte-Array verteilt und wie beschrieben in einen Hexadezimal-Wert umgewandelt.
 
-Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Decoder, 
-wieder in die ursprünglichen Teile zerlegt und anschließend, beispielsweise als JSON-Objekt, nachstehenden Systeme bereitgestellt.
+Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Decoder, wieder in die ursprünglichen Teile zerlegt und anschließend, beispielsweise als JSON-Objekt, nachstehenden Systemen bereitgestellt.
 
 > TODO: @all, bitte nochmal gegenlesen ;-)
 
 ## Schnittstelle EC2 und IoT Core
 
 > TODO: Beschreibung der Verbindung (Fachbegriffe, MQTT, Broker,...)
+> TODO: Erklären der Umgebungsvariablen
 ## IoT Core: Where the IoT magic happens
 
-Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client für die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
+Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
+
+> Ausführliche Dokumentation: https://aws.amazon.com/de/iot-core/
 
 ## IoT Rules Engine: Schnittstelle IoT Core und Lambda Function
+Die IoT Rules Engine ermöglicht es innerhalb von IoT Core topics zu abonnieren und wie gewünscht auf den Erhalt von Nachrichten zu reagieren. Dabei kann mithilfe von SQL bei Erhalt einer Nachricht eine bestimmte Aktion mit den gewünschten Attributen der Nachricht definiert werden. Beispielsweise kann der komplette Inhalt der Nachricht in eine Datenbank geschrieben werden, bei einem bestimmten Nachrichteninhalt ein Alarm ausgelöst werden oder die Nachricht an eine Lambda Funktion weitergeleitet werden.
+
+Im vorliegenden Fall wird die komplette Nachricht an eine Lambda-Funktion übergeben. Dafür wird innerhalb der IoT-Rule der Befehl `SELECT * FROM "bpa/sxxxx"` verwendet. 
+
+> Ausführliche Dokumentation: https://docs.aws.amazon.com/iot/latest/developerguide/iot-rules.html
 ## Lambda Function: Payload-Umwandlung
 
-Die Weiterverarbeitung der gesendete Daten findet mithilfe einer Lambda-Funktion statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt. 
+> TODO: Kurz etwas dazu was eine Lambda Function überhaupt ist.
 
-Der eingehende Payload muss als erstes von Hexadezimal wieder in ein Byte-Array umgewandelt werden. Dies passiert mithilfe der Funktion *Buffer.from()*. Anschließend wird der Decoder aufgerufen, welche das JSON mit den übergebenen Messwerten füllt. Das Logen des Aufrufs, sowie die Ausgabe des Objektes, findet durch die Funktion *console.log()* statt, welche im Produktivsystem auch entfernt werden sollte.
+Die Weiterverarbeitung der gesendeten Daten findet mithilfe einer Lambda-Funktion statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt. 
 
-Folgender Programmcode ist für die Funktion notwendig.
+Der eingehende Payload muss als erstes von Hexadezimal wieder in ein Byte-Array umgewandelt werden. Dies passiert mithilfe der Funktion *Buffer.from()*. Anschließend wird der Decoder aufgerufen, welche das JSON mit den übergebenen Messwerten füllt. Das Loggen des Aufrufs, sowie die Ausgabe des Objektes, findet durch die Funktion *console.log()* statt, welche im Produktivsystem auch entfernt werden sollte.
+
+Folgender Programmcode ist für die Funktion notwendig:
 
 ```js
 exports.handler = async (event) => {
@@ -135,10 +140,13 @@ function DecodeMsg(bytes) {
       iot_bottle_msg
     }
 }
-
 ```
 
-# 4. Praktikumsvorstellung und Präsentation
+> TODO: Kurzer Satz zur Weiterleitung an Gruppe 2.
+
+> Ausführliche Dokumentation: https://aws.amazon.com/de/lambda/
+
+# 3. Praktikumsvorstellung und Präsentation
 ## Durchführung des Praktikums
 Ziel des Praktikums war es die Kommilitonen den gesamten Prozess der Projektgruppe selber entwickeln zu lassen, um die gemachten Erfahrungen und das entstandene Wissen weiterzugeben und voneinander zu lernen. Die Durchführung erfolgte durch Erstellung einzelner Videos mit gleichzeitigem Support bei aufgetretenen Problemen. Die Videos wurden nach den jeweiligen einzelnen Technologien getrennt. Der Ablauf des Praktikums ist in der nachfolgenden Abbildung dargestellt:
 ![Architecture](drawings/BPA_Praktikum.png)
