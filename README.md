@@ -72,6 +72,7 @@ Nachricht: [0-9][1-9]
 
 
 **Erläuterung Umwandlung Payload**
+
 Bei den Payload handelt es sich um Nachrichtenpakete zwischen Sensor bzw. Maschine. Diese beinhalten keine Steuer- und Protokollinformationen, sondern nur die zu übertragenen Nutzdaten.
 
 Um den Umfang der zu übertragenen Datenmengen gering zu halten, werden diese kodieren, wodurch Energie eingespart werden. Beispielsweise kommt bei LoRaWAN hinzu, dass für die Übertragung des Payloads öffentliche Frequenzkanälen genutzt werden und die Datenmenge, welche pro Tag übertragen werden kann, gesetzlich begrenzt ist.
