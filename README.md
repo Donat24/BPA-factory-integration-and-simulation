@@ -46,7 +46,18 @@ Die simulierte Maschine ist eine Getränkeabfüllanlage. Diese wird mithilfe ein
 
 Um eine sinnvolle OEE zu berechnen hat die Maschine eine Planbelegungszeit und Planmenge hinterlegt. Die Maschine sendet Informationen über die Abfüllung neuer Flaschen, der Aussortierung von Flaschen und dem Stop der Maschine. Aufgrund zufälliger Ereignisse kommt es gelegentlich zu Ausfällen oder zur Aussortierung von Flaschen, was für eine geringere Planmenge sorgt.
 
-> TODO: Erläuterung Docker Container-Umgebungsvariablen
+Zur besseren Wartbarkeit der Anwendung, für Debugging-Zwecke aber auch für das einfache parallele Nutzten mehrerer Container werden verschiedene Variablen und Parameter der Anwendung aus den Umgebngsvariablen des Docker-Container geladen. Diese Variablen können dem Docker-Container für eine entsprechende Anpassung beim Starten einfach mitgegeben werden. Idealerweise geschieht dies über das  environment file (.env), welches für dieses Projekt bereits vorhand ist und in das docker-compose file bereits eingebunden wurde. 
+
+> Weitere Informationen zum Env-File und Umgebungsvariablen in Docker unter https://docs.docker.com/compose/environment-variables/
+
+| Umgebungsvariable | Bedeutung | Standardwert |
+|---|---|---|
+| AWS_HOST | AWS IoT Core Host | - |
+| IOT_TOPIC | Das Topic, auf den die Nachrichten publisched werden | topic_1 |
+| IOT_CLIENT_ID | IoT Client ID / Publisher der Nachrichten | machine_1 |
+| TIME_FACTOR | Verhältniss von Echtzeit zu Simulationszeit | 1 |
+| DEBUG | Ändern des Simulationsstartes auf einen anderen Wert durch den Parameter START_DATE_TIME | 0 |
+| START_DATE_TIME | Startzeitpunkt der Simulation. Funktioniert nur wenn Debuging aktiviert ist | "2021-05-03T11:11:45.1345" |
 
 ### Datenmodell des Field Device 
 Während der Simulation enstehen verschiedene Ereignisse. Diese werden im json-Format mithilfe von MQTT gesendet. Der Aufbau einer Nachricht sei wie folgt definiert:
