@@ -40,7 +40,7 @@ Die Simulation auf der EC2 leitet mittels dem MQTT-Protokoll Nachrichten an IoT 
 
 Der gesamte Architekturaufbau ist in der nachfolgenden Abbildung dargestellt.
 
-![Architecture](drawings/BPA_Architecture.png)
+![Architecture](drawings/BPA_Architecture_new.png)
 ## Field Device Funktionsweise
 Die simulierte Maschine ist eine Getränkeabfüllanlage. Diese wird mithilfe eines Python Skripts simuliert. Die Containerisierung ermöglicht die einfache Verwendung der Simulation auf neuen Servern und soll gleichzeitig dafür sorgen, das mehrere Simulationen auf einem oder auf verschiedenen Servern erzeugt werden können.
 
