@@ -11,8 +11,10 @@
 3. Docker Compose Services vorbereiten: `docker-compose build`
 4. Docker Compose Services starten: `docker-compose up (-d for detached)`
 
-## Verbindung AWS und IoT Core
-> TODO: Kurzanleitung (1-2 Sätze wie es funktioniert sollte reichen)
+## Verwendung AWS und IoT Core
+AWS steht für Amazon Web Services und ist ein Tochterunternehmen von Amazon, welches eine Vielzahl an verschiedenen Infrastucture as a Service (IaaS), Platform as a Service (PaaS) und Software as a Service (SaaS) Dienste über das Web zur Verfügung stellt. Einer dieser Dienste ist AWS IoT. AWS IoT ermöglicht das Verbinden von IoT Geräten mit der AWS Cloud und folglich das Nutzten diverser anderer Dienste im Zusammenhang mit diesen Geräten oder den von den Geräten übermittelten Daten. Auf der offiziellen Webseite von AWS IoT wird davon gesprochen, das mithilfe von diesem Dienst IoT Geräte in "AWS IoT-based solutions" integriert werden können.
+
+> Weitere Information zu diesem Thema https://docs.aws.amazon.com/iot/latest/developerguide/what-is-aws-iot.html
 
 ## Verwendung Lambda Function
 > TODO: Kurzanleitung (1-2 Sätze wie es funktioniert sollte reichen)
