@@ -101,9 +101,14 @@ Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Dec
 > TODO: @all, bitte nochmal gegenlesen ;-)
 
 ## Schnittstelle EC2 und IoT Core
+Ein in der IoT Welt typischen Ansatz zur Datenübermittlung ist das sogenannte Publish-Subscribe-Pattern, welches bspw. vom MQTT Protokoll implementiert wird. Dabei werden Nachrichten von einem Publischer (z.B. ein IoT Gerät) an ein sogenanntes Topic verschickt. Diese Topic können von Subscribern abonniert werden. Wird eine Nachricht an ein Topic verschickt, so erahlten alle Subscriber dieses Topics diese Nachricht und können diese Auswerten. Im Fall von MQTT exisitiert einen Mittelsmann zwischen Publischer und Susbriber, welcher Broker gennant wird und das Zustellen und Verwalten der Nachrichten von den Pubilshern zu den Subscribern übernimmt.
 
-> TODO: Beschreibung der Verbindung (Fachbegriffe, MQTT, Broker,...)
-> TODO: Erklären der Umgebungsvariablen
+> Weitere Informatioen zum Thema MQTT unter: https://docs.aws.amazon.com/de_de/iot/latest/developerguide/mqtt.html
+
+AWS IoT Core basiert grunsätzlich auf MQTT 3.1.1. Anzumerken dabei ist, dass AWS IoT anstelle vom "klassischen" Subscriben eines Topics sogenannte IoT Rules verwendet, welche das Verhalten bei eingehenden Nachrichten definieren (etwa das Weiterleiten der Nachricht an eine Lambda Funktion). Ferner läuft der Broker auch direkt in der AWS IoT Cloud, der Entiwckler kommt mit diesen nicht direkt in Kontakt.
+
+> Damit in AWS IoT Core für ein IoT Gerät verwendet werden kann, ist der nachfolgende Schritt zu beachten.
+
 ## IoT Core: Where the IoT magic happens
 
 Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
