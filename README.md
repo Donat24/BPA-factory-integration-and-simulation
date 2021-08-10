@@ -56,7 +56,7 @@ Zur besseren Wartbarkeit der Anwendung, für Debugging-Zwecke aber auch für das
 | IOT_TOPIC | Das Topic, auf den die Nachrichten publisched werden | topic_1 |
 | IOT_CLIENT_ID | IoT Client ID / Publisher der Nachrichten | machine_1 |
 | TIME_FACTOR | Verhältniss von Echtzeit zu Simulationszeit | 1 |
-| DEBUG | Ändern des Simulationsstartes auf einen anderen Wert durch den Parameter START_DATE_TIME | 0 |
+| DEBUG | Ermöglicht das Ändern des Simulationsstartes auf einen anderen Wert durch den Parameter START_DATE_TIME | 0 |
 | START_DATE_TIME | Startzeitpunkt der Simulation. Funktioniert nur wenn Debuging aktiviert ist | "2021-05-03T11:11:45.1345" |
 
 **Wichtig:** Alle Umgebungsvariablen mit Ausnahme von AWS_HOST sind optional. AWS_HOST hingegen ist verpflichtend anzugeben!
