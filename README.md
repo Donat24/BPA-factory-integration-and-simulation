@@ -123,7 +123,7 @@ Im vorliegenden Fall wird die komplette Nachricht an eine Lambda-Funktion überg
 > Ausführliche Dokumentation: https://docs.aws.amazon.com/iot/latest/developerguide/iot-rules.html
 ## Lambda Function: Payload-Umwandlung
 
-Eine AWS Lambda Function stellt Rechenleistung in der Cloud bereit ohne Schritte zur Server-Verwaltung, Skalierung oder Load Balancing zu erfordern. Es reicht aus den auszuführenden Code einzufplegen. 
+Eine AWS Lambda Function stellt Rechenleistung in der Cloud bereit ohne Schritte zur Server-Verwaltung, Skalierung oder Load Balancing zu erfordern. Es reicht aus den auszuführenden Code einzupflegen. 
 
 Die Weiterverarbeitung der vom Field Device gesendeten Daten findet mithilfe einer solchen Lambda Function statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt.
 
