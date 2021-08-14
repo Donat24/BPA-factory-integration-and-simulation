@@ -41,7 +41,7 @@ Team 1 und Ersteller dieser Dokumentation sind [Tamás Janusko](https://github.c
 
 Hauptaufgabe der Gruppe ist es eine Maschine zu simulieren und dessen Daten innerhalb von AWS verarbeitbar zu machen. Für die Simulation der Maschine wird der Service "EC2" von AWS verwendet. Dieser stellt proportionierbare Serverkapazitäten bereit und bietet sich deshalb für die Ausführung von Programmen an. Alternativ wurde die Simulation einer Abfüllanlage mittels Node-RED in Betracht gezogen. Um möglichst wenig Aufwand bei der Ausführung der Simulation zu haben, wird ein Docker-Container verwendet, der allen nötigen Programmcode enthält. Durch die Containerisierung ist es theoretisch möglich mehrere Maschinen gleichzeitig zu simulieren und mit AWS zu verbinden.
 
-Die Simulation auf der EC2 leitet mittels des MQTT-Protokolls Nachrichten an IoT Core weiter. Die Nachrichten bestehen dabei aus einem in hexadezimal umgewandelten Payload, um im Realfall oder bei der Nutzung des Funkstandards LoRaWAN sparsam bei der Datenübertragung zu sein. Dieser Schritt dient zur Übung und Bekanntmachung mit LoRaWAN und ist nicht zwingend notwendig. Innerhalb des Services IoT Core ist eine IoT Rule definiert mit welcher alle eingehenden Nachrichten eines bestimmten Topics weitergeleitet werden können. Unter anderem lassen sich die Nachrichten an IoT-Analytics, eine DynamoDB oder AWS Kinesis weiterleiten, um die Nachrichten zu speichern oder weiter zu verarbeiten. Im vorliegenden Fall werden alle Nachrichten an eine Lambdafunktion weiterleitet. Die Lambda-Funktion erhält die Nachricht der Maschine über die definierte IoT Rule, wandelt diese in eine einfacher verarbeitbare JSON-Nachricht um und leitet die umgewandelte Nachricht an eine Lambda-Funktion von Gruppe 2. 
+Die Simulation auf der EC2 leitet mittels des MQTT-Protokolls Nachrichten an IoT Core weiter. Die Nachrichten bestehen dabei aus einem in hexadezimal umgewandelten Payload, um im Realfall oder bei der Nutzung des Funkstandards LoRaWAN sparsam bei der Datenübertragung zu sein. Dieser Schritt dient zur Übung und Bekanntmachung mit LoRaWAN und ist nicht zwingend notwendig. Innerhalb des Services IoT Core ist eine IoT Rule definiert mit welcher alle eingehenden Nachrichten eines bestimmten Topics weitergeleitet werden können. Unter anderem lassen sich die Nachrichten an IoT-Analytics, eine DynamoDB oder AWS Kinesis weiterleiten, um die Nachrichten zu speichern oder weiter zu verarbeiten. Im vorliegenden Fall werden alle Nachrichten an eine Lambda-Funktion weiterleitet. Die Lambda-Funktion erhält die Nachricht der Maschine über die definierte IoT Rule, wandelt diese in eine einfacher verarbeitbare JSON-Nachricht um und leitet die umgewandelte Nachricht an eine Lambda-Funktion von Gruppe 2. 
 
 Der gesamte Architekturaufbau ist in der nachfolgenden Abbildung dargestellt.
 
@@ -51,7 +51,7 @@ Die simulierte Maschine ist eine Getränkeabfüllanlage. Diese wird mithilfe ein
 
 Um eine sinnvolle OEE zu berechnen, hat die Maschine eine Planbelegungszeit und Planmenge hinterlegt. Die Maschine sendet Informationen über die Abfüllung neuer Flaschen, der Aussortierung von Flaschen und dem Stop der Maschine. Aufgrund zufälliger Ereignisse kommt es gelegentlich zu Ausfällen oder zur Aussortierung von Flaschen, was zu einer geringeren Menge produzierter Flaschen sorgt.
 
-Zur besseren Wartbarkeit der Anwendung, für Debugging-Zwecke aber auch für das einfache parallele Nutzten mehrerer Container werden verschiedene Variablen und Parameter der Anwendung aus den Umgebngsvariablen des Docker-Container geladen. Diese Variablen können dem Docker-Container für eine entsprechende Anpassung beim Starten einfach mitgegeben werden. Idealerweise geschieht dies über das  environment file (.env), welches für dieses Projekt bereits vorhand ist und in das docker-compose file bereits eingebunden wurde. 
+Zur besseren Wartbarkeit der Anwendung, für Debugging-Zwecke aber auch für das einfache parallele Nutzten mehrerer Container werden verschiedene Variablen und Parameter der Anwendung aus den Umgebungsvariablen des Docker-Container geladen. Diese Variablen können dem Docker-Container für eine entsprechende Anpassung beim Starten einfach mitgegeben werden. Idealerweise geschieht dies über die Environmentdatei (.env), welches für dieses Projekt bereits vorhand ist und in der Docker-Compose-Datei bereits eingebunden wurde. 
 
 | Umgebungsvariable | Bedeutung | Standardwert |
 |---|---|---|
@@ -104,11 +104,11 @@ Bei der Abfüllanlage wird ebenfalls der Unix-Timestamp übertragen. Mit 4 Bytes
 Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Decoder, wieder in die ursprünglichen Teile zerlegt und anschließend, beispielsweise als JSON-Objekt, nachstehenden Systemen bereitgestellt.
 
 ## 2.3 Schnittstelle EC2 und IoT Core
-Ein in der IoT-Welt typischen Ansatz zur Datenübermittlung ist das sogenannte Publish-Subscribe-Pattern, welches bspw. vom MQTT Protokoll implementiert wird. Dabei werden Nachrichten von einem Publisher (z.B. ein IoT Gerät) mit einem sogenanntes Topic versehen. Diese Topics können von Subscribern abonniert werden. Wird eine Nachricht mit einem bestimmten Topic verschickt, so erhalten alle Subscriber des Topics die entsprechende Nachricht und können diese auswerten. Im Fall von MQTT exisitiert einen Mittelsmann zwischen Publischer und Susbriber, welcher Broker gennant wird und das Zustellen und Verwalten der Nachrichten von den Pubilshern zu den Subscribern übernimmt.
+Ein in der IoT-Welt typischen Ansatz zur Datenübermittlung ist das sogenannte Publish-Subscribe-Pattern, welches bspw. vom MQTT-Protokoll implementiert wird. Dabei werden Nachrichten von einem Publisher (z.B. ein IoT Gerät) mit einem sogenanntes Topic versehen. Diese Topics können von Subscribern abonniert werden. Wird eine Nachricht mit einem bestimmten Topic verschickt, so erhalten alle Subscriber des Topics die entsprechende Nachricht und können diese auswerten. Im Fall von MQTT exisitiert einen Mittelsmann zwischen Publischer und Susbriber, welcher Broker gennant wird und das Zustellen und Verwalten der Nachrichten von den Pubilshern zu den Subscribern übernimmt.
 
 > Weitere Informatioen zum Thema MQTT: https://docs.aws.amazon.com/de_de/iot/latest/developerguide/mqtt.html
 
-AWS IoT Core basiert grunsätzlich auf MQTT 3.1.1. Anzumerken dabei ist, dass AWS IoT anstelle vom "klassischen" Subscriben eines Topics sogenannte IoT Rules verwendet, welche das Verhalten bei eingehenden Nachrichten definieren (etwa das Weiterleiten der Nachricht an eine Lambda Funktion). Ferner läuft der Broker auch direkt in der AWS IoT Cloud, der Entiwckler kommt mit diesen nicht direkt in Kontakt. Somit werden hier durch das Field Device Nachrichten unmittelbar in die AWS-Cloud und damit einhergehende IoT-Ökosystem eingespeist. 
+AWS IoT Core basiert grundsätzlich auf MQTT 3.1.1. Anzumerken dabei ist, dass AWS IoT anstelle vom "klassischen" Subscriben eines Topics sogenannte IoT Rules verwendet, welche das Verhalten bei eingehenden Nachrichten definieren (etwa das Weiterleiten der Nachricht an eine Lambda-Funktion). Ferner läuft der Broker auch direkt in der AWS IoT Cloud, der Entwickler kommt mit diesen nicht direkt in Kontakt. Somit werden hier durch das Field Device Nachrichten unmittelbar in die AWS-Cloud und damit einhergehende IoT-Ökosystem eingespeist. 
 
 > Damit in AWS IoT Core für ein IoT Gerät verwendet werden kann, ist der nachfolgende Schritt zu beachten.
 
@@ -122,16 +122,16 @@ Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thin
 > Ausführliche Dokumentation: https://aws.amazon.com/de/iot-core/
 
 ## 2.5 IoT Rules Engine: Schnittstelle IoT Core und Lambda Function
-Die IoT Rules Engine ermöglicht es innerhalb von IoT Core Topics zu abonnieren und bei Nachrichteneingängen selbst definierte Ereignisse auszulösen. Dabei kann mittels SQL bei Erhalt einer Nachricht eine bestimmte Aktion mit den gewünschten Attributen der Nachricht definiert werden. Beispielsweise kann der komplette Inhalt der Nachricht in eine Datenbank geschrieben werden, bei einem bestimmten Nachrichteninhalt ein Alarm ausgelöst werden oder die Nachricht an eine Lambda Funktion weitergeleitet werden.
+Die IoT Rules Engine ermöglicht es innerhalb von IoT Core Topics zu abonnieren und bei Nachrichteneingängen selbst definierte Ereignisse auszulösen. Dabei kann mittels SQL bei Erhalt einer Nachricht eine bestimmte Aktion mit den gewünschten Attributen der Nachricht definiert werden. Beispielsweise kann der komplette Inhalt der Nachricht in eine Datenbank geschrieben werden, bei einem bestimmten Nachrichteninhalt ein Alarm ausgelöst werden oder die Nachricht an eine Lambda-Funktion weitergeleitet werden.
 
 Im vorliegenden Fall wird die komplette Nachricht an eine Lambda-Funktion übergeben. Dafür wird innerhalb der IoT-Rule der Befehl `SELECT * FROM "bpa/sxxxx"` verwendet. 
 
 > Ausführliche Dokumentation: https://docs.aws.amazon.com/iot/latest/developerguide/iot-rules.html
-## 2.6 Lambda Function: Payload-Umwandlung
+## 2.6 Lambda-Funktion: Payload-Umwandlung
 
 Eine AWS Lambda Function stellt Rechenleistung in der Cloud bereit ohne Schritte zur Server-Verwaltung, Skalierung oder Load Balancing zu erfordern. Es reicht aus den auszuführenden Code einzupflegen. 
 
-Die Weiterverarbeitung der vom Field Device gesendeten Daten findet mithilfe einer solchen Lambda Function statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt.
+Die Weiterverarbeitung der vom Field Device gesendeten Daten findet mithilfe einer solchen Lambda-Funktion statt. Beim Anlegen wird Node.js 14x als Laufzeitumgebung gewählt.
 
 Der eingehende Payload muss als erstes von Hexadezimal wieder in ein Byte-Array umgewandelt werden. Dies passiert mithilfe der Funktion *Buffer.from()*. Anschließend wird der Decoder aufgerufen, welche das JSON mit den übergebenen Messwerten füllt. Das Loggen des Aufrufs, sowie die Ausgabe des Objektes, findet durch die Funktion *console.log()* statt, welche im Produktivsystem auch entfernt werden sollte.
 
@@ -177,7 +177,7 @@ function DecodeMsg(bytes) {
 Ziel des Praktikums war es die Kommilitonen den gesamten Prozess der Projektgruppe selber entwickeln zu lassen, um die gemachten Erfahrungen und das entstandene Wissen weiterzugeben und voneinander zu lernen. Die Durchführung erfolgte durch Erstellung einzelner Videos mit gleichzeitigem Support bei aufgetretenen Problemen. Die Videos wurden nach den jeweiligen einzelnen Technologien getrennt. Der Ablauf des Praktikums ist in der nachfolgenden Abbildung dargestellt:
 ![Architecture](drawings/BPA_Praktikum.png)
 
-Im Gegensatz zur dargelegten Projektarchitektur wurde im Praktikum die umgewandelte Nachricht nicht an eine weitere Lambda Function weitergeleitet sondern in eine DynamoDB geschrieben.
+Im Gegensatz zur dargelegten Projektarchitektur wurde im Praktikum die umgewandelte Nachricht nicht an eine weitere Lambda-Funktion weitergeleitet sondern in eine DynamoDB geschrieben.
 
 
 Nachfolgend finden sich die Links zu den einzelnen Videos:
