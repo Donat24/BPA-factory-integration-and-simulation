@@ -101,22 +101,22 @@ Entsprechend der Entwicklerdefinition, wird der eingehende Payload durch den Dec
 > TODO: @all, bitte nochmal gegenlesen ;-)
 
 ## Schnittstelle EC2 und IoT Core
-Ein in der IoT Welt typischen Ansatz zur Datenübermittlung ist das sogenannte Publish-Subscribe-Pattern, welches bspw. vom MQTT Protokoll implementiert wird. Dabei werden Nachrichten von einem Publischer (z.B. ein IoT Gerät) an ein sogenanntes Topic verschickt. Diese Topic können von Subscribern abonniert werden. Wird eine Nachricht an ein Topic verschickt, so erahlten alle Subscriber dieses Topics diese Nachricht und können diese Auswerten. Im Fall von MQTT exisitiert einen Mittelsmann zwischen Publischer und Susbriber, welcher Broker gennant wird und das Zustellen und Verwalten der Nachrichten von den Pubilshern zu den Subscribern übernimmt.
+Ein in der IoT-Welt typischen Ansatz zur Datenübermittlung ist das sogenannte Publish-Subscribe-Pattern, welches bspw. vom MQTT Protokoll implementiert wird. Dabei werden Nachrichten von einem Publisher (z.B. ein IoT Gerät) mit einem sogenanntes Topic versehen. Diese Topics können von Subscribern abonniert werden. Wird eine Nachricht mit einem bestimmten Topic verschickt, so erhalten alle Subscriber des Topics die entsprechende Nachricht und können diese auswerten. Im Fall von MQTT exisitiert einen Mittelsmann zwischen Publischer und Susbriber, welcher Broker gennant wird und das Zustellen und Verwalten der Nachrichten von den Pubilshern zu den Subscribern übernimmt.
 
 > Weitere Informatioen zum Thema MQTT unter: https://docs.aws.amazon.com/de_de/iot/latest/developerguide/mqtt.html
 
-AWS IoT Core basiert grunsätzlich auf MQTT 3.1.1. Anzumerken dabei ist, dass AWS IoT anstelle vom "klassischen" Subscriben eines Topics sogenannte IoT Rules verwendet, welche das Verhalten bei eingehenden Nachrichten definieren (etwa das Weiterleiten der Nachricht an eine Lambda Funktion). Ferner läuft der Broker auch direkt in der AWS IoT Cloud, der Entiwckler kommt mit diesen nicht direkt in Kontakt.
+AWS IoT Core basiert grunsätzlich auf MQTT 3.1.1. Anzumerken dabei ist, dass AWS IoT anstelle vom "klassischen" Subscriben eines Topics sogenannte IoT Rules verwendet, welche das Verhalten bei eingehenden Nachrichten definieren (etwa das Weiterleiten der Nachricht an eine Lambda Funktion). Ferner läuft der Broker auch direkt in der AWS IoT Cloud, der Entiwckler kommt mit diesen nicht direkt in Kontakt. Somit werden hier durch das Field Device Nachrichten unmittelbar in die AWS-Cloud und damit einhergehende IoT-Ökosystem eingespeist. 
 
 > Damit in AWS IoT Core für ein IoT Gerät verwendet werden kann, ist der nachfolgende Schritt zu beachten.
 
 ## IoT Core: Where the IoT magic happens
 
-Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
+Um die simulierten Daten zu erfassen, wird in AWS IoT Core hierzu ein neues Thing angelegt welches im AWS-Ökosystem die Schnittstelle zur Maschine darstellt. Ein Thing ist hierbei eine Repräsentation des Field Devices in IoT Core. Die zugehörigen Zertifikate werden nun beschafft und es wird zudem eine Policy hinzugefügt, in der erlaubte Operationen (Publish/Subsribe/...) und zugehörige Topics/Client IDs definiert werden. Zur Kommunikation mit dem simulierten Endgerät wird sich der Python Bibliothek AWSIoTPythonSDK bedient, mit der ein Client die Verbindung mit IoT Core erstellt und entsprechend der Policy konfiguriert werden kann.
 
 > Ausführliche Dokumentation: https://aws.amazon.com/de/iot-core/
 
 ## IoT Rules Engine: Schnittstelle IoT Core und Lambda Function
-Die IoT Rules Engine ermöglicht es innerhalb von IoT Core topics zu abonnieren und wie gewünscht auf den Erhalt von Nachrichten zu reagieren. Dabei kann mithilfe von SQL bei Erhalt einer Nachricht eine bestimmte Aktion mit den gewünschten Attributen der Nachricht definiert werden. Beispielsweise kann der komplette Inhalt der Nachricht in eine Datenbank geschrieben werden, bei einem bestimmten Nachrichteninhalt ein Alarm ausgelöst werden oder die Nachricht an eine Lambda Funktion weitergeleitet werden.
+Die IoT Rules Engine ermöglicht es innerhalb von IoT Core Topics zu abonnieren und bei Nachrichteneingängen selbst definierte Ereignisse auszulösen. Dabei kann mittels SQL bei Erhalt einer Nachricht eine bestimmte Aktion mit den gewünschten Attributen der Nachricht definiert werden. Beispielsweise kann der komplette Inhalt der Nachricht in eine Datenbank geschrieben werden, bei einem bestimmten Nachrichteninhalt ein Alarm ausgelöst werden oder die Nachricht an eine Lambda Funktion weitergeleitet werden.
 
 Im vorliegenden Fall wird die komplette Nachricht an eine Lambda-Funktion übergeben. Dafür wird innerhalb der IoT-Rule der Befehl `SELECT * FROM "bpa/sxxxx"` verwendet. 
 
